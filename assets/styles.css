@@ -177,6 +177,44 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .tbl th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);font-weight:600}
 .tbl tr:last-child td{border-bottom:none}
 
+/* ---------- path decision ---------- */
+.hero{border-left:3px solid var(--accent)}
+.hero p{margin:0 0 10px}
+.prose-tight{padding-left:20px;margin:0 0 10px}
+.prose-tight li{margin-bottom:7px}
+.section-h{font-size:16px;margin:22px 0 12px}
+.path-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:16px;margin-bottom:16px;align-items:start}
+.path-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.path-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.path-badge{background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px}
+.path-card h3{font-size:15.5px}
+.path-tag{margin:0 0 8px;font-size:13.5px;color:var(--ink-2)}
+.path-verdict{margin:0 0 12px;font-size:13.5px;font-weight:600}
+.path-sew{background:var(--surface-2);border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:14px}
+.path-sew .k{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);margin-bottom:2px;font-weight:650}
+.path-card h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);margin:14px 0 6px;font-weight:650}
+.path-card h4.up{color:var(--ok)}
+.path-card h4.down{color:var(--blocked)}
+.path-card ul{padding-left:18px;margin:0;font-size:13px}
+.path-card li{margin-bottom:5px}
+.spec{margin:0;font-size:13px}
+.spec dt{font-weight:600;margin-top:8px}
+.spec dt:first-child{margin-top:0}
+.spec dd{margin:1px 0 0;color:var(--ink-2)}
+.pc-split{margin-top:6px}
+#pathCompare th[scope=row]{white-space:nowrap;color:var(--ink);font-size:13px;text-transform:none;letter-spacing:0}
+#pathCompare td{vertical-align:top}
+.quiz-q{padding:12px 0;border-bottom:1px solid var(--line)}
+.quiz-q:last-of-type{border-bottom:none}
+.qt{margin:0 0 7px;font-size:14px;font-weight:600}
+.quiz-opt{display:flex;gap:9px;align-items:flex-start;padding:4px 0;font-size:13.5px;cursor:pointer}
+.quiz-opt input{width:auto;margin-top:3px;flex:0 0 auto;accent-color:var(--accent)}
+.quiz-out{margin-top:14px;padding:14px 16px;background:var(--accent-soft);border-radius:10px}
+.qo-lead{margin:0 0 4px;font-size:15px}
+.quiz-out > p{font-size:13.5px}
+.ask-list{padding-left:20px;margin:10px 0 0;font-size:13.5px}
+.ask-list li{margin-bottom:10px}
+
 .prose h2{margin-top:18px}
 .prose h2:first-child{margin-top:0}
 .prose ol,.prose ul{padding-left:20px}

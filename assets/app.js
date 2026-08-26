@@ -483,6 +483,107 @@
     }).join("") : '<p class="empty">No contacts match.</p>';
   }
 
+  /* ---------------- path decision ---------------- */
+  const PATH_LETTER = { A: "A", B: "B", C: "C" };
+  let quizAnswers = {};
+
+  function renderPaths() {
+    if ($("#pathCards").dataset.done) return;
+    $("#pathCards").dataset.done = "1";
+
+    $("#pathCards").innerHTML = PATHS.map(function (p) {
+      return '<article class="path-card" id="path-' + p.id + '">' +
+        '<div class="path-head"><span class="path-badge">Path ' + p.id + "</span>" +
+          "<h3>" + esc(p.name) + "</h3></div>" +
+        '<p class="path-tag">' + esc(p.tagline) + "</p>" +
+        '<p class="path-verdict">' + esc(p.verdict) + "</p>" +
+        '<div class="path-sew"><span class="k">Sewage</span>' + esc(p.sewage) + "</div>" +
+        '<h4>The specifics</h4><dl class="spec">' +
+          p.numbers.map(function (n) {
+            return "<dt>" + esc(n[0]) + "</dt><dd>" + esc(n[1]) + "</dd>";
+          }).join("") + "</dl>" +
+        "<h4>You'll also need</h4><ul>" + p.also.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" +
+        '<div class="pc-split">' +
+          '<div><h4 class="up">Works for you</h4><ul>' + p.pros.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>" +
+          '<div><h4 class="down">Costs you</h4><ul>' + p.cons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>" +
+        "</div></article>";
+    }).join("");
+
+    const rows = [
+      ["Permit type", ["Mobile food business", "Mobile food business", "Permanent food establishment"]],
+      ["Sewage handling", ["Onboard holding tank, hauled out", "Direct to public sanitary sewer", "Direct to public sewer or approved treatment system"]],
+      ["Water ceiling", ["~30 gal per service", "None", "None"]],
+      ["Commissary required", ["Yes", "Confirm with SLCoHD — assume yes", "No"]],
+      ["Restroom agreement", ["Yes — within 500 ft, open all operating hours", "Confirm with SLCoHD", "No — on-site restrooms instead"]],
+      ["Grease interceptor", ["No", "Very likely, per sewer authority", "Yes, sized by sewer district"]],
+      ["Statewide reciprocity", ["Yes (Utah Code 11-56-103)", "Yes", "No"]],
+      ["Can work festivals & catering", ["Yes", "Yes — unhook and go", "No"]],
+      ["Building permit", ["No", "Plumbing permit only", "Yes"]],
+      ["Plan review", ["Mobile plan review", "Mobile plan review", "Full permanent-facility plan review"]],
+      ["Relative upfront cost", ["Lowest", "Moderate", "Highest by far"]],
+      ["Ongoing burden", ["Daily commissary trip", "Interceptor cleaning contract", "Full restaurant compliance"]]
+    ];
+    $("#pathCompare").innerHTML =
+      "<thead><tr><th></th><th>Path A — tanks</th><th>Path B — sewer-connected mobile</th><th>Path C — permanent</th></tr></thead><tbody>" +
+      rows.map(function (r) {
+        return "<tr><th scope='row'>" + esc(r[0]) + "</th>" +
+          r[1].map(function (c) { return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>";
+      }).join("") + "</tbody>";
+
+    $("#askHealth").innerHTML = ASK_HEALTH.map(function (q) { return "<li>" + esc(q) + "</li>"; }).join("");
+    $("#askCity").innerHTML = ASK_CITY.map(function (q) { return "<li>" + esc(q) + "</li>"; }).join("");
+
+    $("#quiz").innerHTML = PATH_QUIZ.map(function (item, qi) {
+      return '<div class="quiz-q"><p class="qt">' + (qi + 1) + ". " + esc(item.q) + "</p>" +
+        item.opts.map(function (o, oi) {
+          return '<label class="quiz-opt"><input type="radio" name="q' + qi + '" value="' + oi + '">' +
+            "<span>" + esc(o[0]) + "</span></label>";
+        }).join("") + "</div>";
+    }).join("") + '<button class="btn ghost tiny" id="quizReset" style="margin-top:6px">Clear answers</button>';
+
+    $("#quiz").addEventListener("change", function (e) {
+      if (e.target.name && e.target.name.charAt(0) === "q") {
+        quizAnswers[e.target.name.slice(1)] = +e.target.value;
+        scoreQuiz();
+      }
+    });
+    $("#quizReset").onclick = function () {
+      quizAnswers = {};
+      Array.prototype.forEach.call($("#quiz").querySelectorAll("input"), function (i) { i.checked = false; });
+      $("#quizResult").innerHTML = "";
+    };
+  }
+
+  function scoreQuiz() {
+    const answered = Object.keys(quizAnswers).length;
+    if (answered < PATH_QUIZ.length) {
+      $("#quizResult").innerHTML = '<p class="muted small" style="margin-top:10px">' +
+        answered + " of " + PATH_QUIZ.length + " answered.</p>";
+      return;
+    }
+    const score = { A: 0, B: 0, C: 0 };
+    Object.keys(quizAnswers).forEach(function (qi) {
+      const w = PATH_QUIZ[qi].opts[quizAnswers[qi]][1];
+      score.A += w.A; score.B += w.B; score.C += w.C;
+    });
+    const order = ["A", "B", "C"].sort(function (a, b) { return score[b] - score[a]; });
+    const win = PATHS.filter(function (p) { return p.id === order[0]; })[0];
+    const runner = PATHS.filter(function (p) { return p.id === order[1]; })[0];
+    const close = (score[order[0]] - score[order[1]]) <= 2;
+
+    const max = Math.max(Math.abs(score.A), Math.abs(score.B), Math.abs(score.C), 1);
+    $("#quizResult").innerHTML =
+      '<div class="quiz-out"><p class="qo-lead">Leaning toward <strong>Path ' + win.id + " — " + esc(win.name) + "</strong></p>" +
+      "<p>" + esc(win.verdict) + "</p>" +
+      ["A", "B", "C"].map(function (k) {
+        const pct = Math.round(Math.max(0, score[k]) / max * 100);
+        return '<div class="bar-row"><div class="lbl"><span>Path ' + k + "</span><span class='muted'>" +
+          score[k] + "</span></div><div class='bar'><i style='width:" + pct + "%'></i></div></div>";
+      }).join("") +
+      (close ? "<p class='muted small'>Path " + runner.id + " scores close behind — worth pricing both before you commit.</p>" : "") +
+      "<p class='muted small'>This weighs your answers against the trade-offs above. It is not a substitute for the phone call to 385-468-3845 — that call is what actually decides it.</p></div>";
+  }
+
   /* ---------------- budget ---------------- */
   function renderBudget() {
     let est = 0, act = 0, rows = "";
@@ -540,12 +641,13 @@
   /* ---------------- views ---------------- */
   function setView(v) {
     ui.view = v;
-    ["board", "dashboard", "contacts", "budget", "help"].forEach(function (n) {
+    ["board", "paths", "dashboard", "contacts", "budget", "help"].forEach(function (n) {
       $("#view-" + n).classList.toggle("hidden", n !== v);
     });
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
       t.classList.toggle("active", t.dataset.view === v);
     });
+    if (v === "paths") renderPaths();
     if (v === "dashboard") renderDashboard();
     if (v === "contacts") renderContacts();
     if (v === "budget") renderBudget();

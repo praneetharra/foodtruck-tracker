@@ -40,6 +40,7 @@
 
   <nav class="tabs wrap" id="tabs">
     <button class="tab active" data-view="board">Phases</button>
+    <button class="tab" data-view="paths">Path Decision</button>
     <button class="tab" data-view="dashboard">Dashboard</button>
     <button class="tab" data-view="contacts">Contacts</button>
     <button class="tab" data-view="budget">Budget</button>
@@ -66,6 +67,66 @@
 
     <div class="phase-rail" id="phaseRail"></div>
     <div id="phaseList"></div>
+  </section>
+
+  <!-- ============ PATH DECISION ============ -->
+  <section class="view hidden" id="view-paths">
+    <div class="panel hero">
+      <h2>Trailer, sewage, and which permit you need</h2>
+      <p>You're planning a towed trailer for an Indian menu. Two rules decide almost everything downstream, and they cut in your favour:</p>
+      <ol class="prose-tight">
+        <li><strong>A trailer counts as a food truck.</strong> Utah Code 11-56-102 defines a food truck as a fully encased food service establishment <em>“on a motor vehicle or on a trailer that a motor vehicle pulls.”</em> Towed does not mean permanent.</li>
+        <li><strong>A mobile unit is allowed to connect to a sewer.</strong> Utah rule R392-102-7 lets a mobile food business drop the onboard water tank and use pressurized water — but only while <em>“concurrently connected to a public sanitary sewer system in a manner approved by the local health officer.”</em></li>
+      </ol>
+      <p>So connecting to a sewer does <strong>not</strong> automatically make you a permanent establishment. There's a middle path, and it's the one worth chasing.</p>
+      <p class="muted small">Two caveats. The phrase <em>“in a manner approved by the local health officer”</em> means Salt Lake County has discretion — this must be confirmed by phone, not assumed. And the county's own mobile guidelines describe a mobile food unit as “vehicle-mounted,” which is narrower than the state definition. Ask before you buy.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Which path fits you?</h2>
+      <p class="muted small">Five questions. Nothing is saved or sent — it just weighs the trade-offs you've already got.</p>
+      <div id="quiz"></div>
+      <div id="quizResult"></div>
+    </div>
+
+    <h2 class="section-h">The three paths</h2>
+    <div id="pathCards" class="path-grid"></div>
+
+    <div class="panel">
+      <h2>Side by side</h2>
+      <div class="table-scroll"><table class="tbl" id="pathCompare"></table></div>
+    </div>
+
+    <div class="panel">
+      <h2>What an Indian menu changes</h2>
+      <div class="prose">
+        <p>Cuisine matters here more than it does for most concepts, and it pushes against Path A:</p>
+        <ul>
+          <li><strong>Water volume.</strong> Rinsing rice and dal, blanching, and washing a heavy pot load add up fast. Under Path A, roughly <strong>30 gallons covers your entire service</strong> — handwashing, warewashing and prep combined.</li>
+          <li><strong>Grease load.</strong> Samosas, pakoras, bhatura and tempering all shed oil. Wastewater tanks fill faster, and any sewer connection brings the FOG program and a grease interceptor with it.</li>
+          <li><strong>Tandoor.</strong> If you want one, ask specifically. Solid-fuel versus gas changes the hood type, the fire suppression requirement and possibly whether it's allowed in a mobile unit at all. Ask the health department <em>and</em> the fire inspector before you buy.</li>
+          <li><strong>Spice and turmeric staining</strong> is a finishes question on Path C, where surfaces must stay light-coloured, smooth and cleanable.</li>
+        </ul>
+        <p class="callout">Measure a real service before you decide. Cook a full menu at a commissary and meter the water. If it runs well past 30 gallons, Path A is out — and finding that out now costs you an afternoon instead of a trailer build.</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h2>Ask the health department</h2>
+        <p class="muted small">Salt Lake County Health Dept — Food Protection: <a href="tel:3854683845">385-468-3845</a>. Work down this list and log the answers in Phase 0, step 2.</p>
+        <ol class="ask-list" id="askHealth"></ol>
+      </div>
+      <div class="panel">
+        <h2>Ask the city</h2>
+        <p class="muted small">Business licensing, zoning and the sewer authority for your target address.</p>
+        <ol class="ask-list" id="askCity"></ol>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="muted small">Rules were read in August 2026 from Utah Code, Utah Administrative Code R392-102, SLCoHD guidance documents and Salt Lake City Public Utilities. Regulations change and local interpretation varies. Nothing here is legal advice — confirm with the agency before you commit money.</p>
+    </div>
   </section>
 
   <!-- ============ DASHBOARD ============ -->

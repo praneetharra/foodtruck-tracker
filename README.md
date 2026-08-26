@@ -5,8 +5,13 @@ Salt Lake County, Utah. Static site, no backend, hosted on GitHub Pages.
 
 ## What it does
 
-- **11 ordered phases** from concept through growth, pre-loaded with researched
-  Salt Lake County / Salt Lake City / Utah state requirements.
+- **12 ordered phases** from the licensing-path decision through growth, pre-loaded
+  with researched Salt Lake County / Salt Lake City / Utah state requirements.
+- **Path Decision tab** — a side-by-side comparison of the three ways a food trailer
+  can be licensed in Salt Lake County, built around how wastewater is handled:
+  self-contained tanks, a sewer-connected mobile unit, or a permanent food
+  establishment. Includes an interactive fit-finder and the exact questions to ask
+  the health department and the city.
 - **Every step opens a detail panel** with: status, owner, target date, actual cost,
   a sub-checklist, official links and forms, agency contacts, a running notes log,
   and a next-steps list.

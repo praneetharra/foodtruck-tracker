@@ -82,8 +82,159 @@ const AGENCIES = {
     org: "Utah State Tax Commission — Division of Motor Vehicles",
     url: "https://dmv.utah.gov/",
     note: "Current phone numbers are listed on the DMV contact page."
+  },
+  slcFog: {
+    name: "FOG Program (fats, oils & grease)",
+    org: "Salt Lake City Public Utilities — Wastewater Pretreatment",
+    phone: "801-799-4087",
+    url: "https://www.slc.gov/utilities/pretreatment-fats-oils-grease-fog/",
+    note: "Ask them about grease interceptor requirements before you commit to any sewer connection."
+  },
+  slcDevServices: {
+    name: "Development Services",
+    org: "Salt Lake City",
+    url: "https://www.slc.gov/buildingservices/",
+    note: "Handles building and plumbing permits, and grease interceptor sizing questions."
   }
 };
+
+/* ---------------------------------------------------------------------------
+   LICENSING PATH COMPARISON — the trailer / sewage decision
+   --------------------------------------------------------------------------- */
+const PATHS = [
+  {
+    id: "A",
+    name: "Mobile permit, self-contained tanks",
+    tagline: "The standard food truck path. You carry your water in and your wastewater out.",
+    verdict: "Cheapest and most flexible. The water ceiling is the catch.",
+    sewage: "Onboard wastewater holding tank, dumped at an approved location. Nothing connects to a sewer.",
+    numbers: [
+      ["Fresh water tank", "Min. 30 gal for a food truck (measured down from the inlet) per Utah R392-102-7. SLCoHD's own guidelines allow 10 gal if you only have a hand sink, 30 gal with a three-compartment sink."],
+      ["Wastewater tank", "Must be 15% larger than the fresh tank — so 34.5 gal minimum against a 30 gal supply."],
+      ["Where it goes", "An approved commissary, a waste servicing area approved by the local health officer, or a wastewater transport vehicle."],
+      ["Illegal dumping", "SLCoHD lists fines of $1,000–$2,000 per violation for dumping in storm drains."]
+    ],
+    also: ["Signed commissary agreement (a residential kitchen is never allowed)",
+           "Restroom agreement with a business within 500 ft of the vending location, open during all your operating hours",
+           "Daily return to the commissary for cleaning, water and waste"],
+    pros: ["Lowest upfront cost by a wide margin",
+           "Statewide reciprocity under Utah Code 11-56-103 — other Utah cities must honor your license",
+           "Festivals, catering and multiple cities all stay open to you",
+           "No building permit, no landlord construction negotiation"],
+    cons: ["~30 gallons of water is your entire allowance for a service — handwashing, warewashing and prep combined",
+           "A daily commissary round trip, every operating day",
+           "In Salt Lake City a trailer cannot operate in the public right-of-way at all, so you're on private property regardless",
+           "Grease-heavy menus fill a wastewater tank fast"]
+  },
+  {
+    id: "B",
+    name: "Mobile permit, connected to water & sewer",
+    tagline: "Still a mobile food business — but plumbed in at your site. This option is written into the state rule and most people don't know it exists.",
+    verdict: "Probably your best fit, if the health officer signs off and your site has a sewer lateral.",
+    sewage: "Straight into the public sanitary sewer. No tank, no ceiling, no dump run.",
+    numbers: [
+      ["The rule", "Utah R392-102-7 lets a mobile food business skip the onboard potable water tank and connect to an adjacent pressurized water source — but ONLY when the unit is \"concurrently connected to a public sanitary sewer system in a manner approved by the local health officer.\""],
+      ["Water and sewer are a package", "You cannot take the pressurized water connection without the sewer connection. The rule ties them together deliberately."],
+      ["Discretion", "\"In a manner approved by the local health officer\" means SLCoHD decides what a compliant connection looks like. Get this answer by phone before you spend anything."],
+      ["Grease", "Expect the sewer authority's FOG rules to apply. In Salt Lake City that's ordinance 17.36.140 — grease traps cleaned at least every 30 days, gravity interceptors every 90 days or at 25% capacity."]
+    ],
+    also: ["A site with a legal sanitary sewer lateral you're permitted to tie into",
+           "A plumbing permit from the city, and likely a grease interceptor",
+           "A landlord willing to allow the connection",
+           "Confirm with SLCoHD whether commissary and restroom agreements are still required — assume yes until told otherwise"],
+    pros: ["Removes the water and wastewater ceiling entirely — the thing that most constrains an Indian menu",
+           "You keep the mobile permit, so you keep reciprocity and can still unhook for a festival",
+           "Far cheaper than a permanent build-out",
+           "No daily dump run"],
+    cons: ["Approval is discretionary — the local health officer can say no",
+           "Ties you to a specific site with sewer access",
+           "Grease interceptor cost and ongoing cleaning contract",
+           "A plumbing permit and possibly landlord construction consent"]
+  },
+  {
+    id: "C",
+    name: "Permanent food establishment",
+    tagline: "The trailer stops being a mobile unit. The site becomes a restaurant, and is regulated like one.",
+    verdict: "No constraints on your kitchen — and by far the highest cost and lowest flexibility.",
+    sewage: "Public sewer or a health-department-approved wastewater treatment system, with a grease interceptor.",
+    numbers: [
+      ["Sewage", "Must go to a public sewer or an approved individual wastewater treatment system."],
+      ["Grease interceptor", "Required where needed, accessible for cleaning. No water above 140°F and no food waste discharged into it. Sizing comes from your local sewer district."],
+      ["Sinks", "Three-compartment sink meeting NSF #2, sized for your largest equipment; hand sinks within 15 ft (25 ft maximum) of every prep area, warewashing area, toilet room and customer area; plus a mop/janitorial sink."],
+      ["Restrooms", "Toilet rooms with hand sinks, hot and cold water, self-closing tight-fitting doors, and mechanical ventilation giving a complete air change every 15 minutes."],
+      ["Finishes", "Coving at floor/wall junctures (¼ in. radius, 4 in. high). Light-colored, smooth, non-absorbent, cleanable surfaces. No exposed studs or joists in prep areas. No carpet in prep, storage or utility areas."],
+      ["Ventilation", "Type I hood over every appliance producing grease, vapor or smoke, overhanging the cooking surface by at least 6 in."],
+      ["Water heater", "Minimum 50 gal at 50,000 BTU or 11 kW for facilities without critical plumbing fixtures."],
+      ["Plan review packet", "Application and fee, site plan, dimensional floor plan of the entire facility, equipment schedule and specs, plumbing/mechanical/room finish schedules, and your proposed menu. Construction must begin within 180 days of approval."]
+    ],
+    also: ["A building permit and zoning / land use approval from the city",
+           "Likely ADA, parking and accessibility requirements",
+           "A long-term lease or ownership of the site"],
+    pros: ["No wastewater or water ceiling at all",
+           "No commissary, no restroom agreement, no daily dump run",
+           "You can build the kitchen your menu actually needs — tandoor, fryers, real ventilation",
+           "A fixed address builds regulars in a way a rotating truck cannot"],
+    cons: ["Dramatically more expensive — plan review, build-out, permits, sewer connection, interceptor",
+           "You lose mobility and statewide reciprocity entirely",
+           "Locked to one site and its lease",
+           "Much longer timeline before you can open"]
+  }
+];
+
+/* Decision helper questions. Each option adds weight to path A / B / C. */
+const PATH_QUIZ = [
+  { q: "Will the trailer normally stay parked at one location, or move around?",
+    opts: [
+      ["Moves between locations and events", { A: 3, B: 0, C: -3 }],
+      ["Mostly one spot, occasional events", { A: 1, B: 3, C: 1 }],
+      ["One fixed location, essentially never moves", { A: -2, B: 2, C: 3 }]
+    ]},
+  { q: "Can your target site connect to a public sanitary sewer, and would the property owner allow it?",
+    opts: [
+      ["Yes — there's a sewer lateral and the owner is open to it", { A: 0, B: 3, C: 2 }],
+      ["No, or the owner won't allow any plumbing work", { A: 3, B: -3, C: -2 }],
+      ["Don't know yet", { A: 1, B: 1, C: 0 }]
+    ]},
+  { q: "Realistically, how much water does a full service of your menu use?",
+    opts: [
+      ["Under ~30 gallons — limited frying, small pot load", { A: 3, B: 1, C: 0 }],
+      ["Well over 30 gallons — heavy frying, rice and dal, lots of pot washing", { A: -3, B: 3, C: 3 }],
+      ["Haven't measured it yet", { A: 0, B: 1, C: 0 }]
+    ]},
+  { q: "How important is working festivals, catering and other Utah cities?",
+    opts: [
+      ["Essential — it's a big part of the revenue plan", { A: 3, B: 2, C: -3 }],
+      ["Nice to have occasionally", { A: 1, B: 2, C: 0 }],
+      ["Not part of the plan", { A: -1, B: 1, C: 3 }]
+    ]},
+  { q: "What's your budget tolerance for build-out and permitting before you open?",
+    opts: [
+      ["As lean as possible", { A: 3, B: 1, C: -3 }],
+      ["Moderate — I'd spend on something that removes a real constraint", { A: 0, B: 3, C: 1 }],
+      ["I'm prepared to fund a full commercial build-out", { A: -1, B: 1, C: 3 }]
+    ]}
+];
+
+/* The call script — what to actually ask SLCoHD */
+const ASK_HEALTH = [
+  "We're building a towed trailer, not a self-propelled truck. Do you permit it as a mobile food unit? (Utah Code 11-56-102 defines a food truck as a fully encased food service establishment \"on a motor vehicle or on a trailer that a motor vehicle pulls\" — we want to confirm the county applies it that way.)",
+  "If we park on private property and connect to the site's pressurized potable water AND the public sanitary sewer, will you approve that under R392-102-7 and keep us on a mobile permit?",
+  "What does \"in a manner approved by the local health officer\" require in practice — backflow prevention, an air gap, a specific sewer connection detail, a grease interceptor?",
+  "If we are sewer-connected, do we still need a commissary agreement and a restroom agreement?",
+  "At what point would you reclassify a stationary trailer as a permanent food establishment — is it time in one place, the utility connections, or something else?",
+  "Your mobile guidelines list a 10-gallon minimum fresh water tank, but state rule R392-102-7 says 30 gallons for a food truck. Which applies to us?",
+  "Our menu includes deep frying and possibly a tandoor. Any specific requirements or restrictions for those in a mobile unit?",
+  "What are the current mobile plan review and annual food service permit fees, and which risk tier would our menu fall into?"
+];
+
+const ASK_CITY = [
+  "Is a food trailer allowed to operate on private property at this address, and under what zoning designation?",
+  "If the trailer stays in one place and is connected to utilities, does the city treat it as a structure requiring a building permit?",
+  "What plumbing permit do we need to connect to the sewer lateral, and who inspects it?",
+  "Does the sewer authority require a grease interceptor for our operation, and how is it sized?",
+  "Are there restroom requirements the city imposes on a stationary food trailer that the health department doesn't?",
+  "Is there any limit on how long a trailer may remain parked at one location?"
+];
 
 const SOURCES = [
   ["Salt Lake County Health Dept — Mobile Food Service permits", "https://www.saltlakecounty.gov/health/food-protection/permits/mobile/"],
@@ -93,12 +244,69 @@ const SOURCES = [
   ["Salt Lake City — Mobile Food Business license", "https://www.slc.gov/Finance/business-licensing/license-information/mobile-food-business/"],
   ["Salt Lake City — Consolidated Fee Schedule", "https://tools.slc.gov/feeschedule/"],
   ["Utah Code 11-56-103 — Food truck licensing & reciprocity", "https://le.utah.gov/xcode/Title11/Chapter56/C11-56-S103_2023050320230503.pdf"],
+  ["Utah Code 11-56 — full chapter incl. 11-56-102 definitions (PDF)", "https://le.utah.gov/xcode/Title11/Chapter56/C11-56_2023050320230503.pdf"],
+  ["Utah Admin. Code R392-102 — Mobile Food Business Sanitation (PDF)", "https://epi.utah.gov/wp-content/uploads/R392-102_FoodTruckSanitation_Jan32022.pdf"],
+  ["Utah Admin. Code R392-102-7 — Water and Wastewater Requirements", "https://www.law.cornell.edu/regulations/utah/Utah-Admin-Code-R392-102-7"],
+  ["Utah Admin. Code R392-102-4 — Mobile Food Business Permit Requirements", "https://www.law.cornell.edu/regulations/utah/Utah-Admin-Code-R392-102-4"],
+  ["Utah Admin. Code R392-102-5 — Plan Review Requirements", "https://www.law.cornell.edu/regulations/utah/Utah-Admin-Code-R392-102-5"],
+  ["SLCoHD — Food Cart & Mobile Food Unit Construction Guidelines (PDF)", "https://www.saltlakecounty.gov/globalassets/1-site-files/health/programs/food-protection/permits/mobile-food-service/mobile_guidelines.pdf"],
+  ["SLCoHD — Permanent Facility Plan Review Guidelines (PDF)", "https://www.saltlakecounty.gov/globalassets/1-site-files/health/programs/food-protection/permits/permanent-facility-permits/plan_review_guidelines.pdf"],
+  ["Salt Lake City Public Utilities — Fats, Oils & Grease (FOG) program", "https://www.slc.gov/utilities/pretreatment-fats-oils-grease-fog/"],
   ["Utah Division of Corporations", "https://corporations.utah.gov/"],
   ["Utah State Tax Commission — TAP registration", "https://tap.utah.gov/"],
   ["Municipal Services District (unincorporated county licensing)", "https://msd.utah.gov/"]
 ];
 
 const PHASES = [
+  /* ================= PHASE 0 — the gating decision ================= */
+  {
+    id: "p0", name: "Licensing Path Decision", icon: "🔀",
+    sub: "Trailer + sewage. This decides which permit you pursue and roughly half your startup cost — settle it before you buy anything. See the Path Decision tab for the full comparison.",
+    steps: [
+      { id:"p0s1", title:"Confirm SLCoHD will permit a towed trailer as a mobile food unit", est:0,
+        why:"Utah Code 11-56-102 defines a food truck as a fully encased food service establishment on a motor vehicle OR on a trailer that a motor vehicle pulls — so a trailer qualifies in state law. Confirm the county applies it the same way.",
+        checklist:["Call 385-468-3845 and ask directly","Get the answer in writing or email if you can","Note the name of who told you","Ask whether their Mobile Food Unit Guidelines apply unchanged to trailers"],
+        contacts:["slcohd"],
+        links:[["Utah Code 11-56-102 (definitions)","https://le.utah.gov/xcode/Title11/Chapter56/C11-56_2023050320230503.pdf"],["SLCoHD Mobile Food Unit Guidelines (PDF)","https://www.saltlakecounty.gov/globalassets/1-site-files/health/programs/food-protection/permits/mobile-food-service/mobile_guidelines.pdf"]],
+        tips:"Note that SLCoHD's own guidelines describe a mobile food unit as 'vehicle-mounted,' while state law explicitly includes trailers. That gap is exactly why you ask rather than assume."
+      },
+      { id:"p0s2", title:"Ask the sewer-connection question (R392-102-7)", est:0,
+        why:"This is the single highest-leverage question in your whole plan. State rule allows a mobile food business to skip the onboard water tank and connect to pressurized water — but only when concurrently connected to a public sanitary sewer 'in a manner approved by the local health officer.'",
+        checklist:["Read R392-102-7 before you call so you can cite it","Ask whether SLCoHD approves this for a stationary trailer","Ask exactly what a compliant connection requires (backflow prevention, air gap, connection detail)","Ask whether commissary and restroom agreements still apply if you're sewer-connected","Log the answer and who gave it in the notes below"],
+        contacts:["slcohd"],
+        links:[["Utah R392-102-7 — Water and Wastewater Requirements","https://www.law.cornell.edu/regulations/utah/Utah-Admin-Code-R392-102-7"],["Full R392-102 rule (PDF)","https://epi.utah.gov/wp-content/uploads/R392-102_FoodTruckSanitation_Jan32022.pdf"]],
+        tips:"If the answer is yes, you get an unconstrained kitchen on a mobile permit — the best of both paths. If it's no, your menu has to fit inside a ~30 gallon water budget or you're heading toward a permanent establishment."
+      },
+      { id:"p0s3", title:"Verify sewer access and landlord consent at your target site", est:0,
+        why:"Path B only works if there is a legal sanitary sewer lateral you're allowed to tie into, and an owner who will let you.",
+        checklist:["Confirm a sewer lateral exists at the site","Identify which sewer district or city utility serves it","Ask the property owner about permitting a connection","Ask about a plumbing permit and who inspects it","Ask the sewer authority whether a grease interceptor is required and how it's sized"],
+        contacts:["slcFog","slcDevServices"],
+        links:[["SLC Public Utilities — FOG program","https://www.slc.gov/utilities/pretreatment-fats-oils-grease-fog/"]],
+        tips:"Grease interceptor cost and an ongoing cleaning contract are easy to forget in the budget. Salt Lake City requires grease traps cleaned at least every 30 days, gravity interceptors every 90 days or at 25% capacity."
+      },
+      { id:"p0s4", title:"Measure your menu's actual water and wastewater load", est:0,
+        why:"An Indian menu is water- and grease-heavy: rinsing rice and dal, deep frying, tempering, and a lot of pot washing. 30 gallons has to cover handwashing, warewashing and prep combined.",
+        checklist:["Do a full test service at a commissary and meter the water","Separate handwash, warewash and prep water","Estimate fryer oil volume and disposal method","Compare the total against a 30 gal fresh / 34.5 gal waste system","Decide whether the menu fits the tank or the tank has to go"],
+        tips:"Measure before you decide, not after. If a realistic service runs 60+ gallons, Path A is off the table and you've saved yourself an expensive mistake."
+      },
+      { id:"p0s5", title:"Check city zoning and building requirements for a stationary trailer", est:0,
+        why:"The health department and the city are separate gates. A trailer that never moves may be treated as a structure, which pulls in building permits, restrooms and accessibility.",
+        checklist:["Confirm the zoning at your target address allows a food trailer","Ask whether a permanently sited trailer needs a building permit","Ask whether there's a time limit on parking at one location","Ask about on-site restroom requirements","Ask about parking, accessibility and screening requirements"],
+        contacts:["slcLicensing","slcDevServices","msd"],
+        tips:"Salt Lake City does not allow trailers in the public right-of-way at all, so a trailer is a private-property operation there regardless of which permit you hold."
+      },
+      { id:"p0s6", title:"Price all three paths side by side", est:0,
+        why:"The gap between a self-contained mobile unit and a permanent establishment is large enough to change whether the business is viable.",
+        checklist:["Path A: trailer + tanks + commissary rent + permits","Path B: Path A minus commissary, plus sewer/water connection, plumbing permit, grease interceptor + cleaning contract","Path C: full plan review, build-out, building permit, sewer connection, interceptor, restrooms","Include ongoing monthly cost, not just upfront","Put the numbers in the Budget tab"]
+      },
+      { id:"p0s7", title:"Make the call and write down why", est:0,
+        why:"Every later phase depends on this. Document the decision and the evidence so you don't relitigate it in month four.",
+        checklist:["Choose Path A, B or C","Write the reasoning in the notes below","Note who at SLCoHD confirmed what, and when","Mark the steps in later phases that no longer apply as N/A","Revisit if the health department's answer changes"],
+        tips:"Use the N/A status on steps that don't apply to your chosen path — they drop out of your progress percentage instead of sitting there looking incomplete."
+      }
+    ]
+  },
+
   /* ================= PHASE 1 ================= */
   {
     id: "p1", name: "Concept & Feasibility", icon: "🧭",
