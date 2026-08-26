@@ -1,0 +1,637 @@
+/* =========================================================================
+   Food Truck Launch Tracker — app logic
+   State lives in localStorage. Seed content lives in data.js.
+   ========================================================================= */
+(function () {
+  "use strict";
+
+  const KEY = "ft-tracker-v1";
+  const STATUSES = {
+    todo:    { label: "Not started", cls: "todo" },
+    doing:   { label: "In progress", cls: "doing" },
+    blocked: { label: "Blocked",     cls: "blocked" },
+    done:    { label: "Done",        cls: "done" },
+    na:      { label: "N/A",         cls: "na" }
+  };
+
+  /* ---------------- state ---------------- */
+  let state = load();
+  let ui = { view: "board", status: "all", q: "", onlyStar: false, openStep: null };
+
+  function blank() {
+    return { version: SEED_VERSION, steps: {}, customSteps: {}, theme: null, updated: null };
+  }
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return blank();
+      const p = JSON.parse(raw);
+      return Object.assign(blank(), p);
+    } catch (e) {
+      console.warn("Could not read saved data", e);
+      return blank();
+    }
+  }
+  function save() {
+    state.updated = new Date().toISOString();
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+    } catch (e) {
+      toast("Could not save — browser storage may be full or blocked.");
+    }
+    stamp();
+  }
+  function stamp() {
+    const el = document.getElementById("savedAt");
+    if (!el) return;
+    el.textContent = state.updated
+      ? "Last saved " + new Date(state.updated).toLocaleString()
+      : "Nothing saved yet — your changes will save automatically.";
+  }
+
+  /* Per-step record, created lazily */
+  function rec(id) {
+    if (!state.steps[id]) {
+      state.steps[id] = { status: "todo", owner: "", due: "", actual: "", star: false,
+                          checked: {}, notes: [], next: [], contacts: [] };
+    }
+    const r = state.steps[id];
+    r.checked = r.checked || {};
+    r.notes = r.notes || [];
+    r.next = r.next || [];
+    r.contacts = r.contacts || [];
+    return r;
+  }
+
+  /* Merged view of seed phases + user-added steps */
+  function phases() {
+    return PHASES.map(function (p) {
+      const extra = (state.customSteps[p.id] || []);
+      return Object.assign({}, p, { steps: p.steps.concat(extra) });
+    });
+  }
+  function allSteps() {
+    const out = [];
+    phases().forEach(function (p) {
+      p.steps.forEach(function (s) { out.push({ phase: p, step: s }); });
+    });
+    return out;
+  }
+  function findStep(id) {
+    return allSteps().filter(function (x) { return x.step.id === id; })[0] || null;
+  }
+
+  /* ---------------- helpers ---------------- */
+  const $ = function (s, r) { return (r || document).querySelector(s); };
+  const esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  };
+  const money = function (n) {
+    return "$" + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  };
+  function toast(msg) {
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 2600);
+  }
+  function tel(p) {
+    return p ? p.split("/")[0].replace(/[^0-9]/g, "") : "";
+  }
+
+  /* Counts a step as complete for progress. N/A steps drop out of the denominator. */
+  function progressOf(steps) {
+    let total = 0, done = 0;
+    steps.forEach(function (s) {
+      const st = rec(s.id).status;
+      if (st === "na") return;
+      total++;
+      if (st === "done") done++;
+    });
+    return { total: total, done: done, pct: total ? Math.round(done / total * 100) : 0 };
+  }
+
+  /* ---------------- board ---------------- */
+  function matches(s) {
+    const r = rec(s.id);
+    if (ui.status !== "all" && r.status !== ui.status) return false;
+    if (ui.onlyStar && !r.star) return false;
+    if (ui.q) {
+      const hay = [
+        s.title, s.why, s.tips,
+        (s.checklist || []).join(" "),
+        r.notes.map(function (n) { return n.text; }).join(" "),
+        r.next.map(function (n) { return n.text; }).join(" "),
+        r.contacts.map(function (c) { return [c.name, c.org, c.phone, c.email].join(" "); }).join(" "),
+        (s.contacts || []).map(function (k) {
+          const a = AGENCIES[k]; return a ? [a.name, a.org, a.phone].join(" ") : "";
+        }).join(" "),
+        r.owner
+      ].join(" ").toLowerCase();
+      if (hay.indexOf(ui.q.toLowerCase()) === -1) return false;
+    }
+    return true;
+  }
+
+  function renderBoard() {
+    const ps = phases();
+
+    // rail
+    $("#phaseRail").innerHTML = ps.map(function (p, i) {
+      const pr = progressOf(p.steps);
+      return '<button class="rail-item" data-goto="' + p.id + '">' +
+        '<span class="rn">Phase ' + (i + 1) + '</span>' +
+        '<span class="rt">' + p.icon + " " + esc(p.name) + "</span>" +
+        '<span class="rail-bar"><i style="width:' + pr.pct + '%"></i></span>' +
+        "</button>";
+    }).join("");
+
+    // phases
+    let html = "";
+    let shown = 0;
+    ps.forEach(function (p, i) {
+      const visible = p.steps.filter(matches);
+      shown += visible.length;
+      const pr = progressOf(p.steps);
+      html += '<section class="phase" id="' + p.id + '">' +
+        '<div class="phase-head">' +
+          '<span class="phase-num">' + (i + 1) + "</span>" +
+          "<h2>" + p.icon + " " + esc(p.name) + "</h2>" +
+          '<span class="pill">' + pr.done + "/" + pr.total + " done</span>" +
+          '<p class="sub">' + esc(p.sub) + "</p>" +
+        "</div>" +
+        '<div class="steps">' +
+        (visible.length ? visible.map(stepCard).join("")
+                        : '<p class="empty">No steps match the current filter.</p>') +
+        "</div>" +
+        '<div style="margin-top:8px"><button class="btn tiny" data-addstep="' + p.id + '">+ Add a step to this phase</button></div>' +
+        "</section>";
+    });
+    if (!shown) html = '<div class="panel"><p class="empty">Nothing matches. Clear the search or filter.</p></div>' + html;
+    $("#phaseList").innerHTML = html;
+
+    // overall
+    const pr = progressOf(allSteps().map(function (x) { return x.step; }));
+    $("#overallPct").textContent = pr.pct + "%";
+    $("#overallCount").textContent = pr.done + " of " + pr.total + " steps";
+    const C = 2 * Math.PI * 19;
+    $("#ringFg").style.strokeDashoffset = C - (C * pr.pct / 100);
+  }
+
+  function stepCard(s) {
+    const r = rec(s.id);
+    const st = STATUSES[r.status] || STATUSES.todo;
+    const tags = [];
+    if (r.owner) tags.push('<span class="tag">👤 ' + esc(r.owner) + "</span>");
+    if (r.due) tags.push('<span class="tag">📅 ' + esc(r.due) + "</span>");
+    if (r.notes.length) tags.push('<span class="tag note">📝 ' + r.notes.length + " note" + (r.notes.length > 1 ? "s" : "") + "</span>");
+    const openNext = r.next.filter(function (n) { return !n.done; }).length;
+    if (openNext) tags.push('<span class="tag note">➡️ ' + openNext + " next step" + (openNext > 1 ? "s" : "") + "</span>");
+    const cc = (s.contacts || []).length + r.contacts.length;
+    if (cc) tags.push('<span class="tag">☎️ ' + cc + "</span>");
+    if (s.est) tags.push('<span class="tag">~' + money(s.est) + " est.</span>");
+    if (r.actual) tags.push('<span class="tag">💵 ' + money(r.actual) + " actual</span>");
+    const ck = (s.checklist || []).length;
+    if (ck) {
+      const n = Object.keys(r.checked).filter(function (k) { return r.checked[k]; }).length;
+      tags.push('<span class="tag">☑︎ ' + n + "/" + ck + "</span>");
+    }
+
+    return '<article class="step" data-s="' + r.status + '" data-open="' + s.id + '">' +
+      '<button class="star ' + (r.star ? "on" : "") + '" data-star="' + s.id + '" title="Star this step">' +
+        (r.star ? "★" : "☆") + "</button>" +
+      '<div class="step-main">' +
+        '<div class="step-title"><span class="t">' + esc(s.title) + "</span>" +
+          '<span class="badge ' + st.cls + '">' + st.label + "</span></div>" +
+        (s.why ? '<p class="step-why">' + esc(s.why) + "</p>" : "") +
+        (tags.length ? '<div class="step-meta">' + tags.join("") + "</div>" : "") +
+      "</div></article>";
+  }
+
+  /* ---------------- drawer ---------------- */
+  function openStep(id) {
+    const hit = findStep(id);
+    if (!hit) return;
+    ui.openStep = id;
+    const s = hit.step, r = rec(id);
+
+    $("#drawerPhase").textContent = hit.phase.icon + " " + hit.phase.name;
+    $("#drawerTitle").textContent = s.title;
+
+    let h = "";
+
+    if (s.why) h += '<div class="sec"><h3>Why this matters</h3><p style="margin:0">' + esc(s.why) + "</p></div>";
+
+    /* status block */
+    h += '<div class="sec"><h3>Your tracking</h3>' +
+      '<div class="field-row">' +
+        '<div class="field"><label>Status</label><select id="fStatus">' +
+          Object.keys(STATUSES).map(function (k) {
+            return '<option value="' + k + '"' + (r.status === k ? " selected" : "") + ">" + STATUSES[k].label + "</option>";
+          }).join("") + "</select></div>" +
+        '<div class="field"><label>Owner</label><input type="text" id="fOwner" value="' + esc(r.owner) + '" placeholder="Who\'s doing this?"></div>' +
+      "</div><div class='field-row' style='margin-top:10px'>" +
+        '<div class="field"><label>Target date</label><input type="date" id="fDue" value="' + esc(r.due) + '"></div>' +
+        '<div class="field"><label>Actual cost ($)' + (s.est ? " · est. " + money(s.est) : "") + '</label>' +
+          '<input type="number" id="fActual" min="0" step="1" value="' + esc(r.actual) + '" placeholder="0"></div>' +
+      "</div></div>";
+
+    /* checklist */
+    if ((s.checklist || []).length) {
+      h += '<div class="sec"><h3>Checklist</h3>' + s.checklist.map(function (c, i) {
+        const on = !!r.checked[i];
+        return '<label class="checkline' + (on ? " done" : "") + '">' +
+          '<input type="checkbox" data-ck="' + i + '"' + (on ? " checked" : "") + ">" +
+          "<span>" + esc(c) + "</span></label>";
+      }).join("") + "</div>";
+    }
+
+    if (s.tips) h += '<div class="sec"><h3>Watch out for</h3><div class="callout">' + esc(s.tips) + "</div></div>";
+
+    /* contacts */
+    const seeded = (s.contacts || []).map(function (k) { return AGENCIES[k]; }).filter(Boolean);
+    h += '<div class="sec"><h3>Contacts</h3>';
+    if (!seeded.length && !r.contacts.length) h += '<p class="empty">No contacts yet.</p>';
+    seeded.concat(r.contacts).forEach(function (c, i) {
+      const custom = i >= seeded.length;
+      h += '<div class="card" style="margin-bottom:8px">' +
+        "<h3>" + esc(c.name || "(unnamed)") + "</h3>" +
+        (c.org ? '<p class="org">' + esc(c.org) + "</p>" : "") +
+        (c.phone ? '<p>☎ <a href="tel:' + tel(c.phone) + '">' + esc(c.phone) + "</a></p>" : "") +
+        (c.email ? '<p>✉ <a href="mailto:' + esc(c.email) + '">' + esc(c.email) + "</a></p>" : "") +
+        (c.address ? '<p>📍 ' + esc(c.address) + "</p>" : "") +
+        (c.url ? '<p>🔗 <a href="' + esc(c.url) + '" target="_blank" rel="noopener">Website</a></p>' : "") +
+        (c.note ? '<p class="muted small" style="margin-top:5px">' + esc(c.note) + "</p>" : "") +
+        (custom ? '<p style="margin-top:6px"><button class="btn tiny danger" data-delcontact="' + (i - seeded.length) + '">Remove</button></p>' : "") +
+        "</div>";
+    });
+    h += '<button class="btn tiny" id="btnAddContact">+ Add contact</button></div>';
+
+    /* links */
+    if ((s.links || []).length) {
+      h += '<div class="sec"><h3>Official links & forms</h3><ul class="linklist">' +
+        s.links.map(function (l) {
+          return '<li><a href="' + esc(l[1]) + '" target="_blank" rel="noopener">' + esc(l[0]) + "</a></li>";
+        }).join("") + "</ul></div>";
+    }
+
+    /* next steps */
+    h += '<div class="sec"><h3>Next steps</h3>' +
+      (r.next.length ? r.next.map(function (n, i) {
+        return '<label class="checkline' + (n.done ? " done" : "") + '">' +
+          '<input type="checkbox" data-nx="' + i + '"' + (n.done ? " checked" : "") + ">" +
+          "<span>" + esc(n.text) + "</span>" +
+          '<button class="del" data-delnx="' + i + '" title="Delete">✕</button></label>';
+      }).join("") : '<p class="empty">Nothing queued.</p>') +
+      '<div class="addrow"><input type="text" id="nxInput" placeholder="e.g. Call 385-468-3845 to book the class"><button class="btn primary" id="btnAddNx">Add</button></div></div>';
+
+    /* notes */
+    h += '<div class="sec"><h3>Notes log</h3>' +
+      (r.notes.length ? r.notes.map(function (n, i) {
+        return '<div class="note"><div class="when"><span>' +
+          esc(new Date(n.ts).toLocaleString()) + "</span>" +
+          '<button data-delnote="' + i + '" title="Delete">✕</button></div>' + esc(n.text) + "</div>";
+      }).join("") : '<p class="empty">No notes yet. Log what an agency told you, who you spoke to, and when.</p>') +
+      '<div class="addrow"><textarea id="noteInput" rows="2" placeholder="What did you learn? Who did you talk to?"></textarea></div>' +
+      '<button class="btn primary" id="btnAddNote" style="margin-top:8px">Add note</button></div>';
+
+    if (s.custom) {
+      h += '<div class="sec"><button class="btn danger" id="btnDelStep">Delete this custom step</button></div>';
+    }
+
+    $("#drawerBody").innerHTML = h;
+    wireDrawer(s, r);
+    $("#drawer").classList.remove("hidden");
+    $("#overlay").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+
+  function wireDrawer(s, r) {
+    const body = $("#drawerBody");
+
+    $("#fStatus").onchange = function () { r.status = this.value; save(); renderBoard(); };
+    $("#fOwner").oninput  = function () { r.owner = this.value; save(); };
+    $("#fOwner").onblur   = renderBoard;
+    $("#fDue").onchange   = function () { r.due = this.value; save(); renderBoard(); };
+    $("#fActual").oninput = function () { r.actual = this.value; save(); };
+    $("#fActual").onblur  = renderBoard;
+
+    body.addEventListener("change", function (e) {
+      const t = e.target;
+      if (t.dataset.ck !== undefined) {
+        r.checked[t.dataset.ck] = t.checked;
+        t.closest(".checkline").classList.toggle("done", t.checked);
+        save(); renderBoard();
+      }
+      if (t.dataset.nx !== undefined) {
+        r.next[t.dataset.nx].done = t.checked;
+        t.closest(".checkline").classList.toggle("done", t.checked);
+        save(); renderBoard();
+      }
+    });
+
+    body.addEventListener("click", function (e) {
+      const t = e.target.closest("[data-delnx],[data-delnote],[data-delcontact]");
+      if (!t) return;
+      if (t.dataset.delnx !== undefined) { r.next.splice(+t.dataset.delnx, 1); }
+      if (t.dataset.delnote !== undefined) { r.notes.splice(+t.dataset.delnote, 1); }
+      if (t.dataset.delcontact !== undefined) { r.contacts.splice(+t.dataset.delcontact, 1); }
+      save(); openStep(s.id); renderBoard();
+    });
+
+    $("#btnAddNx").onclick = function () {
+      const v = $("#nxInput").value.trim();
+      if (!v) return;
+      r.next.push({ text: v, done: false });
+      save(); openStep(s.id); renderBoard();
+    };
+    $("#nxInput").onkeydown = function (e) { if (e.key === "Enter") $("#btnAddNx").click(); };
+
+    $("#btnAddNote").onclick = function () {
+      const v = $("#noteInput").value.trim();
+      if (!v) return;
+      r.notes.unshift({ ts: Date.now(), text: v });
+      save(); openStep(s.id); renderBoard();
+    };
+
+    $("#btnAddContact").onclick = function () {
+      const name = prompt("Contact name (person or role):");
+      if (!name) return;
+      r.contacts.push({
+        name: name,
+        org: prompt("Organization / agency:") || "",
+        phone: prompt("Phone:") || "",
+        email: prompt("Email:") || "",
+        address: prompt("Address:") || "",
+        url: prompt("Website URL:") || ""
+      });
+      save(); openStep(s.id); renderBoard(); renderContacts();
+    };
+
+    const del = $("#btnDelStep");
+    if (del) del.onclick = function () {
+      if (!confirm("Delete this custom step and its notes?")) return;
+      Object.keys(state.customSteps).forEach(function (pid) {
+        state.customSteps[pid] = state.customSteps[pid].filter(function (x) { return x.id !== s.id; });
+      });
+      delete state.steps[s.id];
+      save(); closeDrawer(); renderAll();
+    };
+  }
+
+  function closeDrawer() {
+    ui.openStep = null;
+    $("#drawer").classList.add("hidden");
+    $("#overlay").classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+
+  /* ---------------- dashboard ---------------- */
+  function renderDashboard() {
+    const all = allSteps();
+    const counts = { todo: 0, doing: 0, blocked: 0, done: 0, na: 0 };
+    all.forEach(function (x) { counts[rec(x.step.id).status]++; });
+    const pr = progressOf(all.map(function (x) { return x.step; }));
+
+    let openNext = 0, notes = 0, overdue = 0;
+    const today = new Date().toISOString().slice(0, 10);
+    all.forEach(function (x) {
+      const r = rec(x.step.id);
+      openNext += r.next.filter(function (n) { return !n.done; }).length;
+      notes += r.notes.length;
+      if (r.due && r.due < today && r.status !== "done" && r.status !== "na") overdue++;
+    });
+
+    $("#statTiles").innerHTML = [
+      ["Overall progress", pr.pct + "%", pr.done + " of " + pr.total + " active steps"],
+      ["In progress", counts.doing, "steps you've started"],
+      ["Blocked", counts.blocked, counts.blocked ? "needs attention" : "nothing stuck"],
+      ["Open next steps", openNext, "across all phases"],
+      ["Past due", overdue, overdue ? "target date passed" : "all on schedule"],
+      ["Notes logged", notes, "research captured"]
+    ].map(function (t) {
+      return '<div class="stat"><div class="k">' + t[0] + '</div><div class="v">' + t[1] + '</div><div class="d">' + t[2] + "</div></div>";
+    }).join("");
+
+    $("#phaseBars").innerHTML = phases().map(function (p, i) {
+      const q = progressOf(p.steps);
+      return '<div class="bar-row"><div class="lbl"><span>' + p.icon + " " + esc(p.name) +
+        "</span><span class='muted'>" + q.done + "/" + q.total + "</span></div>" +
+        '<div class="bar"><i style="width:' + q.pct + '%"></i></div></div>';
+    }).join("");
+
+    const feed = [];
+    all.forEach(function (x) {
+      rec(x.step.id).next.forEach(function (n) {
+        if (!n.done) feed.push({ text: n.text, step: x.step, phase: x.phase });
+      });
+    });
+    $("#nextStepsFeed").innerHTML = feed.length ? feed.slice(0, 40).map(function (f) {
+      return '<div class="feed-item"><span class="ctx">' + esc(f.phase.name) + " · " + esc(f.step.title) +
+        '</span><a href="#" data-open="' + f.step.id + '">' + esc(f.text) + "</a></div>";
+    }).join("") : '<p class="empty">No open next steps. Open a step and add one.</p>';
+
+    const acts = [];
+    all.forEach(function (x) {
+      rec(x.step.id).notes.forEach(function (n) {
+        acts.push({ ts: n.ts, text: n.text, step: x.step, phase: x.phase });
+      });
+    });
+    acts.sort(function (a, b) { return b.ts - a.ts; });
+    $("#activityFeed").innerHTML = acts.length ? acts.slice(0, 25).map(function (a) {
+      return '<div class="feed-item"><span class="ctx">' + esc(new Date(a.ts).toLocaleString()) +
+        " · " + esc(a.phase.name) + " · " + esc(a.step.title) +
+        '</span><a href="#" data-open="' + a.step.id + '">' + esc(a.text.slice(0, 160)) + "</a></div>";
+    }).join("") : '<p class="empty">No notes yet.</p>';
+  }
+
+  /* ---------------- contacts ---------------- */
+  function renderContacts() {
+    const q = ($("#contactSearch").value || "").toLowerCase();
+    const seen = {}, list = [];
+    allSteps().forEach(function (x) {
+      (x.step.contacts || []).forEach(function (k) {
+        if (seen[k] || !AGENCIES[k]) return;
+        seen[k] = 1;
+        list.push(Object.assign({ _where: x.phase.name }, AGENCIES[k]));
+      });
+      rec(x.step.id).contacts.forEach(function (c) {
+        list.push(Object.assign({ _where: x.phase.name + " · " + x.step.title, _mine: true }, c));
+      });
+    });
+    Object.keys(AGENCIES).forEach(function (k) {
+      if (!seen[k]) { seen[k] = 1; list.push(Object.assign({ _where: "Reference" }, AGENCIES[k])); }
+    });
+
+    const shown = list.filter(function (c) {
+      if (!q) return true;
+      return [c.name, c.org, c.phone, c.email, c._where].join(" ").toLowerCase().indexOf(q) !== -1;
+    });
+
+    $("#contactList").innerHTML = shown.length ? shown.map(function (c) {
+      return '<div class="card"><h3>' + esc(c.name) + (c._mine ? " ✎" : "") + "</h3>" +
+        (c.org ? '<p class="org">' + esc(c.org) + "</p>" : "") +
+        (c.phone ? '<p>☎ <a href="tel:' + tel(c.phone) + '">' + esc(c.phone) + "</a></p>" : "") +
+        (c.email ? '<p>✉ <a href="mailto:' + esc(c.email) + '">' + esc(c.email) + "</a></p>" : "") +
+        (c.address ? '<p>📍 ' + esc(c.address) + "</p>" : "") +
+        (c.url ? '<p>🔗 <a href="' + esc(c.url) + '" target="_blank" rel="noopener">Website</a></p>' : "") +
+        (c.note ? '<p class="muted small" style="margin-top:5px">' + esc(c.note) + "</p>" : "") +
+        '<p class="muted small" style="margin-top:6px">' + esc(c._where) + "</p></div>";
+    }).join("") : '<p class="empty">No contacts match.</p>';
+  }
+
+  /* ---------------- budget ---------------- */
+  function renderBudget() {
+    let est = 0, act = 0, rows = "";
+    phases().forEach(function (p) {
+      p.steps.forEach(function (s) {
+        const r = rec(s.id);
+        if (!s.est && !r.actual) return;
+        if (r.status !== "na") est += Number(s.est || 0);
+        act += Number(r.actual || 0);
+        const st = STATUSES[r.status] || STATUSES.todo;
+        rows += "<tr><td>" + esc(p.name) + "</td><td>" + esc(s.title) + "</td><td>" +
+          (s.est ? money(s.est) + " <span class='muted small'>est.</span>" : "—") + "</td><td>" +
+          (r.actual ? money(r.actual) : "—") + '</td><td><span class="badge ' + st.cls + '">' + st.label + "</span></td></tr>";
+      });
+    });
+
+    $("#budgetTiles").innerHTML = [
+      ["Estimated permitting & licensing", money(est), "rough ballpark, not quotes"],
+      ["Actual spent so far", money(act), "from your entries"],
+      ["Variance", (act - est >= 0 ? "+" : "−") + money(Math.abs(act - est)), act > est ? "over estimate" : "under estimate"]
+    ].map(function (t) {
+      return '<div class="stat"><div class="k">' + t[0] + '</div><div class="v">' + t[1] + '</div><div class="d">' + t[2] + "</div></div>";
+    }).join("");
+
+    $("#budgetTable").querySelector("tbody").innerHTML =
+      rows || '<tr><td colspan="5" class="empty">Nothing costed yet.</td></tr>';
+  }
+
+  /* ---------------- export / import ---------------- */
+  function doExport() {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "foodtruck-tracker-" + new Date().toISOString().slice(0, 10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    toast("Backup downloaded");
+  }
+  function doImport(file) {
+    const fr = new FileReader();
+    fr.onload = function () {
+      try {
+        const p = JSON.parse(fr.result);
+        if (!p || typeof p !== "object" || !p.steps) throw new Error("not a tracker file");
+        if (!confirm("Replace everything currently in this browser with the imported file?")) return;
+        state = Object.assign(blank(), p);
+        save(); renderAll(); toast("Progress restored");
+      } catch (e) {
+        alert("That file doesn't look like a tracker backup.");
+      }
+    };
+    fr.readAsText(file);
+  }
+
+  /* ---------------- views ---------------- */
+  function setView(v) {
+    ui.view = v;
+    ["board", "dashboard", "contacts", "budget", "help"].forEach(function (n) {
+      $("#view-" + n).classList.toggle("hidden", n !== v);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+      t.classList.toggle("active", t.dataset.view === v);
+    });
+    if (v === "dashboard") renderDashboard();
+    if (v === "contacts") renderContacts();
+    if (v === "budget") renderBudget();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function renderAll() {
+    renderBoard();
+    if (ui.view === "dashboard") renderDashboard();
+    if (ui.view === "contacts") renderContacts();
+    if (ui.view === "budget") renderBudget();
+    stamp();
+  }
+
+  /* ---------------- boot ---------------- */
+  function init() {
+    // theme
+    const t = state.theme || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", t);
+    $("#btnTheme").onclick = function () {
+      const cur = document.documentElement.getAttribute("data-theme");
+      const nxt = cur === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", nxt);
+      state.theme = nxt; save();
+    };
+
+    $("#sourceList").innerHTML = SOURCES.map(function (s) {
+      return '<li><a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + esc(s[0]) + "</a></li>";
+    }).join("");
+
+    $("#tabs").addEventListener("click", function (e) {
+      const t = e.target.closest(".tab"); if (t) setView(t.dataset.view);
+    });
+
+    $("#search").addEventListener("input", function () { ui.q = this.value.trim(); renderBoard(); });
+    $("#contactSearch").addEventListener("input", renderContacts);
+    $("#onlyMine").addEventListener("change", function () { ui.onlyStar = this.checked; renderBoard(); });
+    $("#statusFilters").addEventListener("click", function (e) {
+      const c = e.target.closest(".chip"); if (!c) return;
+      ui.status = c.dataset.status;
+      Array.prototype.forEach.call(this.querySelectorAll(".chip"), function (x) { x.classList.remove("active"); });
+      c.classList.add("active");
+      renderBoard();
+    });
+
+    document.addEventListener("click", function (e) {
+      const star = e.target.closest("[data-star]");
+      if (star) {
+        e.stopPropagation();
+        const r = rec(star.dataset.star); r.star = !r.star; save(); renderBoard();
+        return;
+      }
+      const go = e.target.closest("[data-goto]");
+      if (go) { const el = document.getElementById(go.dataset.goto); if (el) el.scrollIntoView({ behavior: "smooth" }); return; }
+
+      const add = e.target.closest("[data-addstep]");
+      if (add) {
+        const title = prompt("What's the step?");
+        if (!title) return;
+        const pid = add.dataset.addstep;
+        state.customSteps[pid] = state.customSteps[pid] || [];
+        state.customSteps[pid].push({
+          id: "custom-" + Date.now(),
+          title: title,
+          why: prompt("Short note on why it matters (optional):") || "",
+          custom: true, checklist: [], contacts: [], links: []
+        });
+        save(); renderAll();
+        return;
+      }
+
+      const op = e.target.closest("[data-open]");
+      if (op) { e.preventDefault(); openStep(op.dataset.open); }
+    });
+
+    $("#btnCloseDrawer").onclick = closeDrawer;
+    $("#overlay").onclick = closeDrawer;
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeDrawer(); });
+
+    $("#btnExport").onclick = doExport;
+    $("#btnImport").onclick = function () { $("#fileImport").click(); };
+    $("#fileImport").onchange = function () { if (this.files[0]) doImport(this.files[0]); this.value = ""; };
+
+    renderAll();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();

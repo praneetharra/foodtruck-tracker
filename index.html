@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Food Truck Launch Tracker — Salt Lake County</title>
+<meta name="description" content="Interactive phase-by-phase tracker for launching a food truck in Salt Lake County, Utah.">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚚</text></svg>">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">🚚</span>
+      <div>
+        <h1>Food Truck Launch Tracker</h1>
+        <p class="brand-sub">Salt Lake County, Utah</p>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="overall">
+        <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
+          <circle class="ring-bg" cx="22" cy="22" r="19"></circle>
+          <circle class="ring-fg" id="ringFg" cx="22" cy="22" r="19"></circle>
+        </svg>
+        <div class="overall-txt">
+          <strong id="overallPct">0%</strong>
+          <span id="overallCount">0 of 0 steps</span>
+        </div>
+      </div>
+      <button class="btn ghost" id="btnTheme" title="Toggle light/dark">🌗</button>
+      <button class="btn ghost" id="btnExport">Export</button>
+      <button class="btn ghost" id="btnImport">Import</button>
+      <input type="file" id="fileImport" accept="application/json" hidden>
+    </div>
+  </div>
+
+  <nav class="tabs wrap" id="tabs">
+    <button class="tab active" data-view="board">Phases</button>
+    <button class="tab" data-view="dashboard">Dashboard</button>
+    <button class="tab" data-view="contacts">Contacts</button>
+    <button class="tab" data-view="budget">Budget</button>
+    <button class="tab" data-view="help">How to use</button>
+  </nav>
+</header>
+
+<main class="wrap" id="main">
+
+  <!-- ============ BOARD ============ -->
+  <section class="view" id="view-board">
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search steps, notes, contacts…" autocomplete="off">
+      <div class="filters" id="statusFilters">
+        <button class="chip active" data-status="all">All</button>
+        <button class="chip" data-status="todo">Not started</button>
+        <button class="chip" data-status="doing">In progress</button>
+        <button class="chip" data-status="blocked">Blocked</button>
+        <button class="chip" data-status="done">Done</button>
+        <button class="chip" data-status="na">N/A</button>
+      </div>
+      <label class="mini-toggle"><input type="checkbox" id="onlyMine"> Only starred</label>
+    </div>
+
+    <div class="phase-rail" id="phaseRail"></div>
+    <div id="phaseList"></div>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section class="view hidden" id="view-dashboard">
+    <div class="grid-stats" id="statTiles"></div>
+    <div class="two-col">
+      <div class="panel">
+        <h2>Phase progress</h2>
+        <div id="phaseBars"></div>
+      </div>
+      <div class="panel">
+        <h2>Open next steps</h2>
+        <p class="muted small">Everything you've written in a “Next steps” box that isn't checked off yet.</p>
+        <div id="nextStepsFeed"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Recent activity</h2>
+      <div id="activityFeed"></div>
+    </div>
+  </section>
+
+  <!-- ============ CONTACTS ============ -->
+  <section class="view hidden" id="view-contacts">
+    <div class="panel">
+      <h2>Contact directory</h2>
+      <p class="muted small">Official agency contacts are pre-loaded. Contacts you add inside a step show up here too. Verify phone numbers and fees before relying on them — agencies change them.</p>
+      <input type="search" id="contactSearch" placeholder="Filter contacts…">
+      <div id="contactList" class="contact-grid"></div>
+    </div>
+  </section>
+
+  <!-- ============ BUDGET ============ -->
+  <section class="view hidden" id="view-budget">
+    <div class="panel">
+      <h2>Budget tracker</h2>
+      <p class="muted small">Estimates come from published guidance and third-party 2026 guides — treat them as ballparks. Enter your actual costs in each step and they roll up here.</p>
+      <div class="grid-stats" id="budgetTiles"></div>
+      <div class="table-scroll">
+        <table class="tbl" id="budgetTable">
+          <thead><tr><th>Phase</th><th>Step</th><th>Estimated</th><th>Actual</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HELP ============ -->
+  <section class="view hidden" id="view-help">
+    <div class="panel prose">
+      <h2>How this tracker works</h2>
+      <ol>
+        <li><strong>Phases</strong> — the launch is broken into ordered phases. Click a phase in the rail to jump to it.</li>
+        <li><strong>Steps</strong> — click any step to open it. Inside you get official links, agency contacts, a sub-checklist, a status, an owner, a due date, a cost field, a running notes log, and a next-steps list.</li>
+        <li><strong>Your data</strong> — everything saves automatically in this browser (localStorage). It is not sent anywhere and no one else can see it.</li>
+        <li><strong>Back it up</strong> — click <em>Export</em> to download a JSON file. Use <em>Import</em> to restore it, or to move your progress to another computer or browser. Do this regularly; clearing your browser data wipes the tracker.</li>
+        <li><strong>Adding your own</strong> — every phase has an “Add step” button, and every step has “Add contact”. Custom items are yours and survive updates to the built-in content.</li>
+      </ol>
+      <h2>A caution on the pre-loaded details</h2>
+      <p>Phone numbers, fees, and rules were gathered from Salt Lake County Health Department, Salt Lake City, and Utah state sources. Fee amounts marked <em>est.</em> come from third-party guides and are not official quotes. <strong>Confirm everything with the agency before you spend money or make plans.</strong> Requirements also differ by city — Salt Lake City, West Valley, Sandy, Murray and unincorporated county are not the same.</p>
+      <h2>Sources</h2>
+      <ul id="sourceList"></ul>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ STEP DRAWER ============ -->
+<div class="drawer-overlay hidden" id="overlay"></div>
+<aside class="drawer hidden" id="drawer" aria-label="Step detail">
+  <div class="drawer-head">
+    <div>
+      <p class="drawer-phase" id="drawerPhase"></p>
+      <h2 id="drawerTitle"></h2>
+    </div>
+    <button class="btn ghost icon" id="btnCloseDrawer" aria-label="Close">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</aside>
+
+<footer class="wrap foot">
+  <p>Built for planning purposes only. Not legal, tax, or financial advice — confirm every requirement with the issuing agency.</p>
+  <p class="muted small" id="savedAt"></p>
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
