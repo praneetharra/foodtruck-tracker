@@ -102,6 +102,23 @@
     return p ? p.split("/")[0].replace(/[^0-9]/g, "") : "";
   }
 
+  /* Renders a step's or path's citation list from the REFS registry. */
+  function refBlock(refs) {
+    if (!refs || !refs.length) {
+      return '<p class="no-rule">No regulation behind this one — it\'s operational judgment. ' +
+             "Anything cost- or compliance-related here still needs checking yourself.</p>";
+    }
+    return '<ul class="reflist">' + refs.map(function (r) {
+      const key = Array.isArray(r) ? r[0] : r;
+      const note = Array.isArray(r) ? r[1] : "";
+      const d = REFS[key];
+      if (!d) return "";
+      return '<li><a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.title) + "</a>" +
+        '<span class="rkind">' + esc(d.kind) + "</span>" +
+        (note ? '<span class="rnote">' + esc(note) + "</span>" : "") + "</li>";
+    }).join("") + "</ul>";
+  }
+
   /* Counts a step as complete for progress. N/A steps drop out of the denominator. */
   function progressOf(steps) {
     let total = 0, done = 0;
@@ -194,6 +211,7 @@
     if (cc) tags.push('<span class="tag">☎️ ' + cc + "</span>");
     if (s.est) tags.push('<span class="tag">~' + money(s.est) + " est.</span>");
     if (r.actual) tags.push('<span class="tag">💵 ' + money(r.actual) + " actual</span>");
+    if ((s.refs || []).length) tags.push('<span class="tag cite">📖 ' + s.refs.length + " cited</span>");
     const ck = (s.checklist || []).length;
     if (ck) {
       const n = Object.keys(r.checked).filter(function (k) { return r.checked[k]; }).length;
@@ -277,6 +295,9 @@
           return '<li><a href="' + esc(l[1]) + '" target="_blank" rel="noopener">' + esc(l[0]) + "</a></li>";
         }).join("") + "</ul></div>";
     }
+
+    /* references — where the claims in this step come from */
+    h += '<div class="sec"><h3>Where this comes from</h3>' + refBlock(s.refs) + "</div>";
 
     /* next steps */
     h += '<div class="sec"><h3>Next steps</h3>' +
@@ -484,8 +505,24 @@
   }
 
   /* ---------------- path decision ---------------- */
-  const PATH_LETTER = { A: "A", B: "B", C: "C" };
   let quizAnswers = {};
+
+  /* Short inline citation label, e.g. "R392-102-7" or "SLCoHD guidelines" */
+  const SHORT_CITE = {
+    code1156: "§11-56-102", code1156_103: "§11-56-103",
+    r392_102: "R392-102", r392_102_2: "R392-102-2", r392_102_3: "R392-102-3",
+    r392_102_4: "R392-102-4", r392_102_5: "R392-102-5", r392_102_7: "R392-102-7",
+    r392_102_11: "R392-102-11", r392_102_16: "R392-102-16",
+    slcohdMobile: "SLCoHD mobile page", slcohdMobileGuide: "SLCoHD guidelines",
+    slcohdPlanReview: "SLCoHD plan review", slcohdPermits: "SLCoHD permits",
+    slcohdPermanent: "SLCoHD permanent", slcohdFoodHandlers: "SLCoHD food handlers",
+    slcFogRef: "SLC FOG program", slcPretreatment: "SLC pretreatment",
+    slcGuidePdf: "SLC guide (PDF)", slcGuide: "SLC guide",
+    slcMobileLicense: "SLC license page", slcFeeSchedule: "SLC fee schedule",
+    slcOrd569: "SLC Code 5.69", slcOrd21A: "SLC Code 21A.36.160",
+    slcZoningMap: "SLC zoning map", slcDevServicesRef: "SLC Dev Services"
+  };
+  function shortCite(k) { return SHORT_CITE[k] || (REFS[k] ? REFS[k].kind : k); }
 
   function renderPaths() {
     if ($("#pathCards").dataset.done) return;
@@ -500,13 +537,18 @@
         '<div class="path-sew"><span class="k">Sewage</span>' + esc(p.sewage) + "</div>" +
         '<h4>The specifics</h4><dl class="spec">' +
           p.numbers.map(function (n) {
-            return "<dt>" + esc(n[0]) + "</dt><dd>" + esc(n[1]) + "</dd>";
+            const d = n[2] ? REFS[n[2]] : null;
+            return "<dt>" + esc(n[0]) + "</dt><dd>" + esc(n[1]) +
+              (d ? ' <a class="citelink" href="' + esc(d.url) + '" target="_blank" rel="noopener" title="' +
+                   esc(d.title) + '">' + esc(shortCite(n[2])) + "</a>" : "") + "</dd>";
           }).join("") + "</dl>" +
         "<h4>You'll also need</h4><ul>" + p.also.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" +
         '<div class="pc-split">' +
           '<div><h4 class="up">Works for you</h4><ul>' + p.pros.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>" +
           '<div><h4 class="down">Costs you</h4><ul>' + p.cons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></div>" +
-        "</div></article>";
+        "</div>" +
+        '<h4>Source documents for this path</h4>' + refBlock(p.refs) +
+        "</article>";
     }).join("");
 
     const rows = [
@@ -530,8 +572,14 @@
           r[1].map(function (c) { return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>";
       }).join("") + "</tbody>";
 
-    $("#askHealth").innerHTML = ASK_HEALTH.map(function (q) { return "<li>" + esc(q) + "</li>"; }).join("");
-    $("#askCity").innerHTML = ASK_CITY.map(function (q) { return "<li>" + esc(q) + "</li>"; }).join("");
+    function askItem(q) {
+      const d = q[1] ? REFS[q[1]] : null;
+      return "<li>" + esc(q[0]) +
+        (d ? '<a class="citelink" href="' + esc(d.url) + '" target="_blank" rel="noopener" title="' +
+             esc(d.title) + '">' + esc(shortCite(q[1])) + "</a>" : "") + "</li>";
+    }
+    $("#askHealth").innerHTML = ASK_HEALTH.map(askItem).join("");
+    $("#askCity").innerHTML = ASK_CITY.map(askItem).join("");
 
     $("#quiz").innerHTML = PATH_QUIZ.map(function (item, qi) {
       return '<div class="quiz-q"><p class="qt">' + (qi + 1) + ". " + esc(item.q) + "</p>" +
@@ -638,6 +686,36 @@
     fr.readAsText(file);
   }
 
+  /* ---------------- sources ---------------- */
+  function renderSources() {
+    /* how many steps cite each document */
+    const uses = {};
+    allSteps().forEach(function (x) {
+      (x.step.refs || []).forEach(function (r) {
+        const k = Array.isArray(r) ? r[0] : r;
+        uses[k] = (uses[k] || 0) + 1;
+      });
+    });
+    PATHS.forEach(function (p) {
+      (p.refs || []).forEach(function (k) { uses[k] = (uses[k] || 0) + 1; });
+    });
+
+    const order = ["Utah statute", "Utah administrative rule", "Salt Lake County Health Dept",
+                   "Salt Lake County", "Salt Lake City", "Utah state agency", "Federal", "Business support"];
+    const groups = {};
+    SOURCES.forEach(function (s) { (groups[s.kind] = groups[s.kind] || []).push(s); });
+
+    $("#sourceList").innerHTML = order.filter(function (k) { return groups[k]; }).map(function (k) {
+      return '<div class="src-group"><h3>' + esc(k) + "</h3>" +
+        groups[k].map(function (s) {
+          const n = uses[s.key] || 0;
+          return '<div class="src"><a href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.title) + "</a>" +
+            (n ? '<span class="rkind">cited in ' + n + " step" + (n > 1 ? "s" : "") + "</span>" : "") +
+            '<p class="rnote">' + esc(s.what) + "</p></div>";
+        }).join("") + "</div>";
+    }).join("");
+  }
+
   /* ---------------- views ---------------- */
   function setView(v) {
     ui.view = v;
@@ -674,9 +752,7 @@
       state.theme = nxt; save();
     };
 
-    $("#sourceList").innerHTML = SOURCES.map(function (s) {
-      return '<li><a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + esc(s[0]) + "</a></li>";
-    }).join("");
+    renderSources();
 
     $("#tabs").addEventListener("click", function (e) {
       const t = e.target.closest(".tab"); if (t) setView(t.dataset.view);

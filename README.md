@@ -20,6 +20,12 @@ Salt Lake County, Utah. Static site, no backend, hosted on GitHub Pages.
   contacts you add yourself.
 - **Budget** — estimated vs. actual permitting/licensing cost.
 - **Search and filters** across steps, notes and contacts. Star the steps you care about.
+- **Citations throughout.** Every step has a *Where this comes from* section listing the
+  statutes, administrative rules and agency documents behind its claims — 184 citations
+  across 43 source documents. A step with no citations says so plainly, so operational
+  judgment is never mistaken for a regulation. The **How to use** tab lists every source
+  grouped by issuing body, with a note on what each document is good for and how many
+  steps rely on it.
 
 ## Your data
 
@@ -51,13 +57,15 @@ minute or two.
 
 | File | What's in it |
 |---|---|
-| `assets/data.js` | All phases, steps, checklists, agency contacts, links, cost estimates |
+| `assets/data.js` | All phases, steps, checklists, agency contacts, the `REFS` citation registry, path comparison, cost estimates |
 | `assets/app.js` | Application logic, state, persistence |
 | `assets/styles.css` | Styling and light/dark theme |
 | `index.html` | Page structure |
 
 To add or change steps for everyone who loads the site, edit `assets/data.js` and
-push. Personal notes and status are stored separately in the browser, so they survive
+push. To cite a source, add it once to the `REFS` object and reference it by key from
+any step: `refs:[["r392_102_7","what this establishes here"]]`. A build check validates
+that every key resolves. Personal notes and status are stored separately in the browser, so they survive
 content updates. Steps you add through the **+ Add a step** button live only in your
 browser.
 

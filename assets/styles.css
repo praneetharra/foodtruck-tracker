@@ -177,6 +177,26 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .tbl th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);font-weight:600}
 .tbl tr:last-child td{border-bottom:none}
 
+/* ---------- citations ---------- */
+.reflist{list-style:none;padding:0;margin:0}
+.reflist li{padding:8px 0;border-bottom:1px dashed var(--line)}
+.reflist li:last-child{border-bottom:none}
+.reflist a{font-size:13.5px;font-weight:550}
+.rkind{display:inline-block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+  background:var(--surface-2);color:var(--ink-2);padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:1px}
+.rnote{display:block;font-size:12.5px;color:var(--ink-2);margin-top:3px}
+.no-rule{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:9px;padding:10px 12px;margin:0}
+.tag.cite{background:var(--surface-2);color:var(--ink-2)}
+.citelink{display:inline-block;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent);
+  padding:1px 7px;border-radius:999px;margin-left:5px;white-space:nowrap;vertical-align:1px}
+.citelink:hover{text-decoration:none;filter:brightness(.96)}
+.src-group{margin-bottom:20px}
+.src-group h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);
+  margin-bottom:8px;font-weight:650;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.src{padding:8px 0}
+.src a{font-size:13.5px;font-weight:550}
+.src .rnote{margin-top:2px}
+
 /* ---------- path decision ---------- */
 .hero{border-left:3px solid var(--accent)}
 .hero p{margin:0 0 10px}
