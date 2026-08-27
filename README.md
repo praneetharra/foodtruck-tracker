@@ -29,12 +29,22 @@ Salt Lake County, Utah. Static site, no backend, hosted on GitHub Pages.
 
 ## Your data
 
-Everything you type is saved in your browser's `localStorage` on the device you're
-using. It is never uploaded anywhere and no one else can see it.
+Everything you type saves instantly to this browser's `localStorage`.
 
-**Back it up.** Click **Export** to download a JSON file, and **Import** to restore it
-or move your progress to another browser or computer. Clearing your browser data will
-wipe the tracker.
+**Cross-device sync is optional and off until configured.** Fill in
+`assets/config.js` with a Supabase project URL and anon key and the top-bar chip
+becomes **Sign in to sync**: enter your email, type the one-time code, and every
+device you sign in on shares the same plan. See **[SUPABASE-SETUP.md](SUPABASE-SETUP.md)**
+— one-time, about 15 minutes, free tier.
+
+Merging is per-step rather than whole-file. Whichever device edited a step most
+recently wins on status, owner, date and cost, but **notes are unioned**, so a note
+written on your phone and one written on your laptop both survive. Deletions are
+tombstoned so they don't reappear from the other device.
+
+Until sync is set up — or if you never bother — the tracker works exactly as before,
+and **Export** / **Import** move a JSON backup between machines. Worth exporting
+occasionally either way.
 
 ## Publishing to GitHub Pages
 
@@ -58,7 +68,9 @@ minute or two.
 | File | What's in it |
 |---|---|
 | `assets/data.js` | All phases, steps, checklists, agency contacts, the `REFS` citation registry, path comparison, cost estimates |
-| `assets/app.js` | Application logic, state, persistence |
+| `assets/app.js` | Application logic, state, local persistence, cross-device merge |
+| `assets/sync.js` | Supabase transport — auth and read/write of the plan blob |
+| `assets/config.js` | Your Supabase URL and anon key (empty = local-only mode) |
 | `assets/styles.css` | Styling and light/dark theme |
 | `index.html` | Page structure |
 

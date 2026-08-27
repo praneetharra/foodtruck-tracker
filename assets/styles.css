@@ -177,6 +177,28 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .tbl th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-2);font-weight:600}
 .tbl tr:last-child td{border-bottom:none}
 
+/* ---------- sync chip & auth modal ---------- */
+.sync-chip{display:inline-flex;align-items:center;gap:6px}
+.sdot{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;
+  font-size:10px;line-height:1;background:var(--surface-2);color:var(--ink-2)}
+.sync-chip.s-signedin .sdot,.sync-chip.s-synced .sdot{background:var(--ok-soft);color:var(--ok)}
+.sync-chip.s-saving .sdot,.sync-chip.s-connecting .sdot,.sync-chip.s-sending .sdot,
+.sync-chip.s-verifying .sdot,.sync-chip.s-sent .sdot{background:var(--doing-soft);color:var(--doing)}
+.sync-chip.s-offline .sdot,.sync-chip.s-error .sdot{background:var(--blocked-soft);color:var(--blocked)}
+.sync-chip.s-signedout .sdot{background:var(--accent-soft);color:var(--accent)}
+
+.modal{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(420px,calc(100% - 32px));background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;z-index:60;box-shadow:0 20px 60px rgba(10,14,20,.28);
+}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:16px 18px;border-bottom:1px solid var(--line)}
+.modal-head h2{font-size:16px}
+.modal-body{padding:18px}
+.modal-body .field label{display:block;font-size:12px;color:var(--ink-2);margin-bottom:3px}
+.auth-msg{margin:12px 0 0;font-size:13px;color:var(--ink-2);min-height:1em}
+
 /* ---------- citations ---------- */
 .reflist{list-style:none;padding:0;margin:0}
 .reflist li{padding:8px 0;border-bottom:1px dashed var(--line)}

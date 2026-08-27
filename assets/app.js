@@ -32,7 +32,7 @@
       return blank();
     }
   }
-  function save() {
+  function save(opts) {
     state.updated = new Date().toISOString();
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
@@ -40,7 +40,88 @@
       toast("Could not save — browser storage may be full or blocked.");
     }
     stamp();
+    if (!(opts && opts.noPush)) schedulePush();
   }
+
+  /* -------- cloud push, debounced so typing doesn't hammer the network -------- */
+  let pushTimer = null;
+  function schedulePush() {
+    if (!window.FTSync || !FTSync.configured || !FTSync.isSignedIn()) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(pushNow, 1500);
+  }
+  function pushNow() {
+    if (!window.FTSync || !FTSync.configured || !FTSync.isSignedIn()) return Promise.resolve();
+    return FTSync.push(state).catch(function () { /* status UI already reflects it */ });
+  }
+
+  /* ---------------- cross-device merge ----------------
+     Step-level last-write-wins on `updated`, except notes and next-steps which
+     are unioned so work done on two devices at once isn't silently dropped.
+     Deletions are respected via small tombstone lists. */
+  function uniq(arr, keyFn) {
+    const seen = {}, out = [];
+    arr.forEach(function (x) {
+      const k = keyFn(x);
+      if (seen[k]) return;
+      seen[k] = 1; out.push(x);
+    });
+    return out;
+  }
+
+  function mergeStep(a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    const newer = (a.updated || 0) >= (b.updated || 0) ? a : b;
+    const older = newer === a ? b : a;
+    const m = Object.assign({}, newer);
+
+    const noteTomb = {};
+    (a.delNotes || []).concat(b.delNotes || []).forEach(function (t) { noteTomb[t] = 1; });
+    m.delNotes = Object.keys(noteTomb).map(Number);
+    m.notes = uniq((newer.notes || []).concat(older.notes || []), function (n) { return n.ts + "|" + n.text; })
+      .filter(function (n) { return !noteTomb[n.ts]; })
+      .sort(function (x, y) { return y.ts - x.ts; });
+
+    const nextTomb = {};
+    (a.delNext || []).concat(b.delNext || []).forEach(function (t) { nextTomb[t] = 1; });
+    m.delNext = Object.keys(nextTomb);
+    const byText = {};
+    (older.next || []).forEach(function (n) { byText[n.text] = n; });
+    (newer.next || []).forEach(function (n) { byText[n.text] = n; });
+    m.next = Object.keys(byText).filter(function (t) { return !nextTomb[t]; }).map(function (t) { return byText[t]; });
+
+    const cKey = function (c) { return (c.name || "") + "|" + (c.phone || "") + "|" + (c.email || ""); };
+    m.contacts = uniq((newer.contacts || []).concat(older.contacts || []), cKey);
+
+    m.checked = Object.assign({}, older.checked || {}, newer.checked || {});
+    m.updated = Math.max(a.updated || 0, b.updated || 0);
+    return m;
+  }
+
+  function mergeStates(local, remote) {
+    const out = blank();
+    out.theme = local.theme || remote.theme || null;
+    const ids = {};
+    Object.keys(local.steps || {}).forEach(function (k) { ids[k] = 1; });
+    Object.keys(remote.steps || {}).forEach(function (k) { ids[k] = 1; });
+    Object.keys(ids).forEach(function (id) {
+      out.steps[id] = mergeStep((local.steps || {})[id], (remote.steps || {})[id]);
+    });
+    const pids = {};
+    Object.keys(local.customSteps || {}).forEach(function (k) { pids[k] = 1; });
+    Object.keys(remote.customSteps || {}).forEach(function (k) { pids[k] = 1; });
+    Object.keys(pids).forEach(function (pid) {
+      const byId = {};
+      ((remote.customSteps || {})[pid] || []).forEach(function (s) { byId[s.id] = s; });
+      ((local.customSteps || {})[pid] || []).forEach(function (s) { byId[s.id] = s; });
+      out.customSteps[pid] = Object.keys(byId).map(function (k) { return byId[k]; });
+    });
+    out.updated = new Date().toISOString();
+    return out;
+  }
+  /* exposed for the test harness */
+  window.__ftMerge = mergeStates;
   function stamp() {
     const el = document.getElementById("savedAt");
     if (!el) return;
@@ -53,15 +134,22 @@
   function rec(id) {
     if (!state.steps[id]) {
       state.steps[id] = { status: "todo", owner: "", due: "", actual: "", star: false,
-                          checked: {}, notes: [], next: [], contacts: [] };
+                          checked: {}, notes: [], next: [], contacts: [],
+                          delNotes: [], delNext: [], updated: 0 };
     }
     const r = state.steps[id];
     r.checked = r.checked || {};
     r.notes = r.notes || [];
     r.next = r.next || [];
     r.contacts = r.contacts || [];
+    r.delNotes = r.delNotes || [];
+    r.delNext = r.delNext || [];
+    r.updated = r.updated || 0;
     return r;
   }
+
+  /* Stamp a step as changed. Cross-device merging is decided by these. */
+  function touch(id) { rec(id).updated = Date.now(); }
 
   /* Merged view of seed phases + user-added steps */
   function phases() {
@@ -333,11 +421,11 @@
   function wireDrawer(s, r) {
     const body = $("#drawerBody");
 
-    $("#fStatus").onchange = function () { r.status = this.value; save(); renderBoard(); };
-    $("#fOwner").oninput  = function () { r.owner = this.value; save(); };
+    $("#fStatus").onchange = function () { r.status = this.value; touch(s.id); save(); renderBoard(); };
+    $("#fOwner").oninput  = function () { r.owner = this.value; touch(s.id); save(); };
     $("#fOwner").onblur   = renderBoard;
-    $("#fDue").onchange   = function () { r.due = this.value; save(); renderBoard(); };
-    $("#fActual").oninput = function () { r.actual = this.value; save(); };
+    $("#fDue").onchange   = function () { r.due = this.value; touch(s.id); save(); renderBoard(); };
+    $("#fActual").oninput = function () { r.actual = this.value; touch(s.id); save(); };
     $("#fActual").onblur  = renderBoard;
 
     body.addEventListener("change", function (e) {
@@ -345,29 +433,36 @@
       if (t.dataset.ck !== undefined) {
         r.checked[t.dataset.ck] = t.checked;
         t.closest(".checkline").classList.toggle("done", t.checked);
-        save(); renderBoard();
+        touch(s.id); save(); renderBoard();
       }
       if (t.dataset.nx !== undefined) {
         r.next[t.dataset.nx].done = t.checked;
         t.closest(".checkline").classList.toggle("done", t.checked);
-        save(); renderBoard();
+        touch(s.id); save(); renderBoard();
       }
     });
 
     body.addEventListener("click", function (e) {
       const t = e.target.closest("[data-delnx],[data-delnote],[data-delcontact]");
       if (!t) return;
-      if (t.dataset.delnx !== undefined) { r.next.splice(+t.dataset.delnx, 1); }
-      if (t.dataset.delnote !== undefined) { r.notes.splice(+t.dataset.delnote, 1); }
+      if (t.dataset.delnx !== undefined) {
+        const gone = r.next.splice(+t.dataset.delnx, 1)[0];
+        if (gone) r.delNext.push(gone.text);
+      }
+      if (t.dataset.delnote !== undefined) {
+        const gone = r.notes.splice(+t.dataset.delnote, 1)[0];
+        if (gone) r.delNotes.push(gone.ts);
+      }
       if (t.dataset.delcontact !== undefined) { r.contacts.splice(+t.dataset.delcontact, 1); }
-      save(); openStep(s.id); renderBoard();
+      touch(s.id); save(); openStep(s.id); renderBoard();
     });
 
     $("#btnAddNx").onclick = function () {
       const v = $("#nxInput").value.trim();
       if (!v) return;
       r.next.push({ text: v, done: false });
-      save(); openStep(s.id); renderBoard();
+      r.delNext = r.delNext.filter(function (x) { return x !== v; });
+      touch(s.id); save(); openStep(s.id); renderBoard();
     };
     $("#nxInput").onkeydown = function (e) { if (e.key === "Enter") $("#btnAddNx").click(); };
 
@@ -375,7 +470,7 @@
       const v = $("#noteInput").value.trim();
       if (!v) return;
       r.notes.unshift({ ts: Date.now(), text: v });
-      save(); openStep(s.id); renderBoard();
+      touch(s.id); save(); openStep(s.id); renderBoard();
     };
 
     $("#btnAddContact").onclick = function () {
@@ -389,7 +484,7 @@
         address: prompt("Address:") || "",
         url: prompt("Website URL:") || ""
       });
-      save(); openStep(s.id); renderBoard(); renderContacts();
+      touch(s.id); save(); openStep(s.id); renderBoard(); renderContacts();
     };
 
     const del = $("#btnDelStep");
@@ -740,6 +835,130 @@
     stamp();
   }
 
+  /* ---------------- cloud sync UI ---------------- */
+  let syncState = "unconfigured";
+
+  function paintSync(st, detail) {
+    syncState = st;
+    const chip = $("#syncChip");
+    if (!chip) return;
+    const map = {
+      unconfigured: ["·", "Local only", "This browser only — set up sync in SUPABASE-SETUP.md"],
+      connecting:   ["…", "Connecting", "Reaching the sync service"],
+      signedout:    ["↯", "Sign in to sync", "Sync across your devices"],
+      sending:      ["…", "Sending code", ""],
+      sent:         ["✉", "Check your email", ""],
+      verifying:    ["…", "Verifying", ""],
+      signedin:     ["✓", "Synced", FTSync.email()],
+      saving:       ["⟳", "Saving…", FTSync.email()],
+      synced:       ["✓", "Synced", FTSync.email()],
+      offline:      ["!", "Offline", detail || "Changes are saved here and will sync when you reconnect"],
+      error:        ["!", "Sync error", detail || ""]
+    };
+    const m = map[st] || map.signedout;
+    chip.className = "btn ghost sync-chip s-" + st;
+    chip.innerHTML = '<span class="sdot">' + m[0] + "</span>" + esc(m[1]);
+    chip.title = m[2];
+    chip.classList.toggle("hidden", false);
+  }
+
+  function openAuth() {
+    if (!FTSync.configured) {
+      alert("Cloud sync isn't set up for this site yet.\n\n" +
+            "Open SUPABASE-SETUP.md in the repository — it's a one-time, roughly 15 minute job. " +
+            "Until then everything saves in this browser and Export / Import moves it between devices.");
+      return;
+    }
+    if (FTSync.isSignedIn()) {
+      if (confirm("Signed in as " + FTSync.email() + ".\n\nSync now and stay signed in? (Cancel to sign out.)")) {
+        doSync();
+      } else {
+        FTSync.signOut().then(function () { paintSync("signedout"); toast("Signed out — this browser's copy is untouched"); });
+      }
+      return;
+    }
+    $("#authModal").classList.remove("hidden");
+    $("#authOverlay").classList.remove("hidden");
+    $("#authStep2").classList.add("hidden");
+    $("#authMsg").textContent = "";
+    $("#authEmail").focus();
+  }
+  function closeAuth() {
+    $("#authModal").classList.add("hidden");
+    $("#authOverlay").classList.add("hidden");
+  }
+
+  /* Pull remote, merge into local, push the result back. */
+  function doSync() {
+    if (!FTSync.configured || !FTSync.isSignedIn()) return Promise.resolve();
+    paintSync("saving");
+    return FTSync.pull().then(function (remote) {
+      if (remote && remote.data && remote.data.steps) {
+        const before = JSON.stringify(state);
+        state = mergeStates(state, remote.data);
+        if (JSON.stringify(state) !== before) {
+          toast("Merged changes from your other devices");
+          renderAll();
+        }
+        save({ noPush: true });
+      }
+      return FTSync.push(state);
+    }).then(function () {
+      renderAll();
+    }).catch(function (e) {
+      paintSync("offline", e && e.message);
+    });
+  }
+
+  function initSync() {
+    if (!window.FTSync) return;
+    FTSync.init({
+      onStatus: paintSync,
+      onSession: function (s) { if (s) doSync(); }
+    });
+
+    $("#syncChip").onclick = openAuth;
+    $("#authClose").onclick = closeAuth;
+    $("#authOverlay").onclick = closeAuth;
+
+    $("#authSend").onclick = function () {
+      const em = $("#authEmail").value.trim();
+      if (!em || em.indexOf("@") === -1) { $("#authMsg").textContent = "That doesn't look like an email address."; return; }
+      $("#authMsg").textContent = "Sending…";
+      FTSync.sendCode(em).then(function () {
+        $("#authStep2").classList.remove("hidden");
+        $("#authMsg").textContent = "Sent. Enter the 6-digit code from the email — or just click the link in it.";
+        $("#authCode").focus();
+      }).catch(function (e) { $("#authMsg").textContent = e.message || "Could not send the code."; });
+    };
+    $("#authVerify").onclick = function () {
+      const em = $("#authEmail").value.trim();
+      const code = $("#authCode").value.trim();
+      if (!code) return;
+      $("#authMsg").textContent = "Verifying…";
+      FTSync.verifyCode(em, code).then(function () {
+        closeAuth();
+        toast("Signed in — syncing");
+        doSync();
+      }).catch(function (e) {
+        $("#authMsg").textContent = e.message ||
+          "That code didn't work. If your email only contained a link, click the link instead.";
+      });
+    };
+    $("#authEmail").onkeydown = function (e) { if (e.key === "Enter") $("#authSend").click(); };
+    $("#authCode").onkeydown  = function (e) { if (e.key === "Enter") $("#authVerify").click(); };
+
+    /* flush pending changes when the tab is backgrounded or closed */
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") { clearTimeout(pushTimer); pushNow(); }
+    });
+    window.addEventListener("beforeunload", function () { clearTimeout(pushTimer); pushNow(); });
+    /* pick up other devices' changes when you come back to the tab */
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible" && FTSync.isSignedIn()) doSync();
+    });
+  }
+
   /* ---------------- boot ---------------- */
   function init() {
     // theme
@@ -773,7 +992,7 @@
       const star = e.target.closest("[data-star]");
       if (star) {
         e.stopPropagation();
-        const r = rec(star.dataset.star); r.star = !r.star; save(); renderBoard();
+        const r = rec(star.dataset.star); r.star = !r.star; touch(star.dataset.star); save(); renderBoard();
         return;
       }
       const go = e.target.closest("[data-goto]");
@@ -808,6 +1027,7 @@
     $("#fileImport").onchange = function () { if (this.files[0]) doImport(this.files[0]); this.value = ""; };
 
     renderAll();
+    initSync();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

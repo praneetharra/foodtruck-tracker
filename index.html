@@ -31,6 +31,7 @@
           <span id="overallCount">0 of 0 steps</span>
         </div>
       </div>
+      <button class="btn ghost sync-chip hidden" id="syncChip"><span class="sdot">·</span>Local only</button>
       <button class="btn ghost" id="btnTheme" title="Toggle light/dark">🌗</button>
       <button class="btn ghost" id="btnExport">Export</button>
       <button class="btn ghost" id="btnImport">Import</button>
@@ -181,10 +182,16 @@
       <ol>
         <li><strong>Phases</strong> — the launch is broken into ordered phases. Click a phase in the rail to jump to it.</li>
         <li><strong>Steps</strong> — click any step to open it. Inside you get official links, agency contacts, a sub-checklist, a status, an owner, a due date, a cost field, a running notes log, and a next-steps list.</li>
-        <li><strong>Your data</strong> — everything saves automatically in this browser (localStorage). It is not sent anywhere and no one else can see it.</li>
-        <li><strong>Back it up</strong> — click <em>Export</em> to download a JSON file. Use <em>Import</em> to restore it, or to move your progress to another computer or browser. Do this regularly; clearing your browser data wipes the tracker.</li>
+        <li><strong>Your data</strong> — everything saves automatically in this browser (localStorage) the moment you type it, whether or not you're signed in.</li>
+        <li><strong>Syncing across devices</strong> — click the chip in the top bar. If it says <em>Sign in to sync</em>, enter your email, get a one-time code, and every device you sign in on shares the same plan. If it says <em>Local only</em>, cloud sync hasn't been configured yet — see <code>SUPABASE-SETUP.md</code> in the repository, it's a one-time job.</li>
+        <li><strong>Back it up anyway</strong> — <em>Export</em> downloads a JSON file, <em>Import</em> restores it. Worth doing occasionally even with sync on.</li>
         <li><strong>Adding your own</strong> — every phase has an “Add step” button, and every step has “Add contact”. Custom items are yours and survive updates to the built-in content.</li>
       </ol>
+      <h2>How syncing handles two devices at once</h2>
+      <p>Changes are pushed about a second and a half after you stop typing, and again whenever you leave the tab. When you come back to a tab, it pulls first and merges.</p>
+      <p>Merging is deliberate rather than blunt: for each step, whichever device edited it most recently wins on status, owner, date and cost — but <strong>notes are unioned</strong>, so a note you wrote on your phone and a note you wrote on your laptop both survive. Next-step items merge the same way, and deleting one is remembered so it doesn't reappear from the other device.</p>
+      <p>If you're offline the chip says so, your work still saves locally, and it pushes when you're back.</p>
+
       <h2>A caution on the pre-loaded details</h2>
       <p>Phone numbers, fees, and rules were gathered from Salt Lake County Health Department, Salt Lake City, and Utah state sources. Fee amounts marked <em>est.</em> come from third-party guides and are not official quotes. <strong>Confirm everything with the agency before you spend money or make plans.</strong> Requirements also differ by city — Salt Lake City, West Valley, Sandy, Murray and unincorporated county are not the same.</p>
       <h2>Every source, and what it's good for</h2>
@@ -208,12 +215,42 @@
   <div class="drawer-body" id="drawerBody"></div>
 </aside>
 
+<!-- ============ SIGN IN ============ -->
+<div class="drawer-overlay hidden" id="authOverlay"></div>
+<div class="modal hidden" id="authModal" role="dialog" aria-label="Sign in to sync">
+  <div class="modal-head">
+    <h2>Sync across your devices</h2>
+    <button class="btn ghost icon" id="authClose" aria-label="Close">✕</button>
+  </div>
+  <div class="modal-body">
+    <p class="muted small">Enter your email and we'll send a one-time code. No password to remember, and nothing on this page is shared with anyone else — your plan is visible only to accounts you add to it.</p>
+    <div class="field" style="margin-top:12px">
+      <label for="authEmail">Email address</label>
+      <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email">
+    </div>
+    <button class="btn primary" id="authSend" style="margin-top:10px">Send code</button>
+
+    <div id="authStep2" class="hidden" style="margin-top:16px">
+      <div class="field">
+        <label for="authCode">6-digit code from the email</label>
+        <input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
+      </div>
+      <button class="btn primary" id="authVerify" style="margin-top:10px">Verify and sign in</button>
+    </div>
+
+    <p id="authMsg" class="auth-msg"></p>
+    <p class="muted small" style="margin-top:14px">Your progress stays in this browser too. Signing in adds a cloud copy — it never replaces the local one without merging first.</p>
+  </div>
+</div>
+
 <footer class="wrap foot">
   <p>Built for planning purposes only. Not legal, tax, or financial advice — confirm every requirement with the issuing agency.</p>
   <p class="muted small" id="savedAt"></p>
 </footer>
 
+<script src="assets/config.js"></script>
 <script src="assets/data.js"></script>
+<script src="assets/sync.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>
