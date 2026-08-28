@@ -137,20 +137,47 @@ grant execute on function public.ensure_plan() to authenticated;
 
 You should see **Success. No rows returned**.
 
-## 3. Turn on the 6-digit code in the email
+## 3. Nothing to do here — but read this
 
-By default Supabase emails a magic *link*. The tracker accepts either, but the code
-is more reliable — a link requested on your laptop and opened on your phone can fail,
-a code never does.
+**If the email template editor is read-only, that's expected. Skip ahead.**
 
-1. **Authentication → Emails** (older projects: **Email Templates**) → **Magic Link**.
-2. Add this line to the template body, above or below the existing link:
+On 3 June 2026 Supabase stopped letting free-tier projects created after that date
+customise their auth email templates, after people abused free projects to send
+phishing mail. Existing free projects and all paid plans kept the ability. A project
+created today on the free tier cannot edit templates, full stop.
+
+This costs you nothing. The default email sends a **magic link**, the tracker signs
+you in when you click it, and because the page uses the implicit auth flow a link
+requested on your laptop still works when opened on your phone. The 6-digit code box
+in the sign-in dialog is only useful if your template happens to include a code — if
+your email has just a link, ignore the box and click the link.
+
+### Two limits on the built-in email service, worth knowing now
+
+1. **It only delivers to your project's team members.** Any other address gets
+   *"Email address not authorized"*. Your own Supabase account email works
+   immediately. To add your business partner, either invite them to the project's
+   organisation under **Organization → Team**, or set up custom SMTP (below).
+2. **Roughly 2 emails per hour.** Fine in practice — sessions persist and refresh
+   themselves, so you sign in on a device once and stay signed in for a long time.
+   You'll only notice it if you're testing repeatedly.
+
+### Custom SMTP — optional, and the fix for both limits
+
+Not needed to get going. Do it when you want to add someone outside your Supabase
+org, or when the 2/hour limit starts annoying you:
+
+1. Sign up with an email provider — [Resend](https://resend.com) is the usual pick at
+   this size; Postmark, SendGrid and Amazon SES all work too.
+2. **Project Settings → Authentication → SMTP Settings**, enable custom SMTP, and
+   paste in the host, port, username and password your provider gives you.
+3. Sending opens up to any address, the initial cap becomes 30/hour (adjustable under
+   Rate Limits), and template editing comes back — so if you later want the 6-digit
+   code, add this to the Magic Link template:
 
    ```html
    <p>Or enter this code: <strong>{{ .Token }}</strong></p>
    ```
-
-3. Save.
 
 ## 4. Allow your site's URL
 
@@ -191,16 +218,25 @@ the dangerous one — it bypasses RLS, and it belongs nowhere near this repo.
 
 ## 6. Sign in
 
-Reload the site. The top-bar chip now reads **Sign in to sync**. Click it, enter your
-email, then type the 6-digit code. Repeat on your phone with the same email address
-and both devices share one plan.
+Reload the site (hard-refresh: Cmd-Shift-R). The top-bar chip now reads
+**Sign in to sync**. Click it, enter the email address on your Supabase account, and
+click **Email me a sign-in link**. Open the email, click the link, and you land back
+on the tracker signed in — the chip turns green.
+
+Then do the same on your phone with the same email address. Both devices now share
+one plan, and everything you'd already entered in either browser gets merged rather
+than overwritten.
 
 ---
 
 ## Adding your business partner later
 
-Have them open the site and sign in once with their own email — that creates their
-account and, harmlessly, an empty plan of their own. Then in **SQL Editor**:
+First make sure email can actually reach them: either invite them to the project's
+organisation under **Organization → Team**, or set up custom SMTP (step 3). Without
+one of those, the built-in email service refuses to deliver to their address.
+
+Then have them open the site and sign in once with their own email — that creates
+their account and, harmlessly, an empty plan of their own. Then in **SQL Editor**:
 
 ```sql
 -- Find the two ids you need
@@ -226,11 +262,23 @@ hasn't gone live yet. Hard-refresh (Cmd-Shift-R).
 **"Could not load the Supabase library"** — network blocked the CDN. Your work is
 still saved locally.
 
-**Code is rejected** — codes expire after about an hour. Request a fresh one. If the
-email contains only a link and no code, step 3 hasn't been saved.
+**"Email address not authorized"** — the built-in email service only delivers to your
+project's team members. Use the address on your Supabase account, add the person under
+**Organization → Team**, or set up custom SMTP.
 
-**Sign-in link does nothing** — step 4's Redirect URLs don't match your site exactly,
-trailing slash included.
+**No email arrives at all** — you've likely hit the ~2 per hour cap on the built-in
+service. Wait, or set up custom SMTP.
+
+**The email has no 6-digit code** — normal. Free projects created after 3 June 2026
+can't customise templates. Click the link instead; the code box is optional.
+
+**Sign-in link does nothing / bounces to an error** — step 4's Redirect URLs don't
+match your site exactly, trailing slash included. It must be
+`https://praneetharra.github.io/foodtruck-tracker/`.
+
+**Signed in on the laptop but the phone won't take the link** — the link is
+single-use and expires (about an hour by default). Request a fresh one from the
+phone itself.
 
 **Chip says "Offline"** — pushes are failing. Your data is safe in the browser and
 will sync when the connection returns. If it persists, check the browser console; an

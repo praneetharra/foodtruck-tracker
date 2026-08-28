@@ -66,8 +66,12 @@ window.FTSync = (function () {
           auth: {
             persistSession: true,
             autoRefreshToken: true,
-            /* implicit so a magic link opened on a different device than the one
-               that requested it still works; the code path below is primary. */
+            /* Implicit, not PKCE. PKCE stores a verifier in the requesting
+               browser, so a link requested on the laptop and opened on the phone
+               would fail. Implicit puts the tokens in the URL fragment, which
+               works from any device — and since Supabase locked email template
+               editing for new free projects (3 June 2026), the link is the only
+               sign-in route most projects have. */
             flowType: "implicit",
             detectSessionInUrl: true
           }
@@ -80,8 +84,10 @@ window.FTSync = (function () {
 
         return client.auth.getSession().then(function (r) {
           session = (r && r.data && r.data.session) || null;
-          /* strip auth tokens out of the address bar after a magic-link landing */
-          if (location.hash && location.hash.indexOf("access_token") !== -1) {
+          /* tidy the address bar after a magic-link landing: the SDK consumes the
+             token fragment but leaves a bare "#" behind */
+          if (location.hash && (location.hash.indexOf("access_token") !== -1 ||
+                                location.hash === "#" || location.hash === "#_=_")) {
             history.replaceState(null, "", location.pathname + location.search);
           }
           status(session ? "signedin" : "signedout");
@@ -97,7 +103,8 @@ window.FTSync = (function () {
     isSignedIn: function () { return !!session; },
     email: function () { return session && session.user ? session.user.email : ""; },
 
-    /* Send a one-time code (and a link, depending on your email template). */
+    /* Sends a magic link — plus a 6-digit code, but only if the project's email
+       template includes {{ .Token }}, which free projects can no longer add. */
     sendCode: function (email) {
       if (!client) return Promise.reject(new Error(
         configured ? "Not connected to the sync service yet — reload the page and try again."

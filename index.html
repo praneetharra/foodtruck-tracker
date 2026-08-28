@@ -183,7 +183,7 @@
         <li><strong>Phases</strong> — the launch is broken into ordered phases. Click a phase in the rail to jump to it.</li>
         <li><strong>Steps</strong> — click any step to open it. Inside you get official links, agency contacts, a sub-checklist, a status, an owner, a due date, a cost field, a running notes log, and a next-steps list.</li>
         <li><strong>Your data</strong> — everything saves automatically in this browser (localStorage) the moment you type it, whether or not you're signed in.</li>
-        <li><strong>Syncing across devices</strong> — click the chip in the top bar. If it says <em>Sign in to sync</em>, enter your email, get a one-time code, and every device you sign in on shares the same plan. If it says <em>Local only</em>, cloud sync hasn't been configured yet — see <code>SUPABASE-SETUP.md</code> in the repository, it's a one-time job.</li>
+        <li><strong>Syncing across devices</strong> — click the chip in the top bar. If it says <em>Sign in to sync</em>, enter your email, click the link that arrives, and every device you sign in on shares the same plan. If it says <em>Local only</em>, cloud sync hasn't been configured yet — see <code>SUPABASE-SETUP.md</code> in the repository, it's a one-time job.</li>
         <li><strong>Back it up anyway</strong> — <em>Export</em> downloads a JSON file, <em>Import</em> restores it. Worth doing occasionally even with sync on.</li>
         <li><strong>Adding your own</strong> — every phase has an “Add step” button, and every step has “Add contact”. Custom items are yours and survive updates to the built-in content.</li>
       </ol>
@@ -223,22 +223,27 @@
     <button class="btn ghost icon" id="authClose" aria-label="Close">✕</button>
   </div>
   <div class="modal-body">
-    <p class="muted small">Enter your email and we'll send a one-time code. No password to remember, and nothing on this page is shared with anyone else — your plan is visible only to accounts you add to it.</p>
+    <p class="muted small">We'll email you a sign-in link. No password to remember, and your plan is visible only to accounts you add to it.</p>
     <div class="field" style="margin-top:12px">
       <label for="authEmail">Email address</label>
       <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email">
     </div>
-    <button class="btn primary" id="authSend" style="margin-top:10px">Send code</button>
-
-    <div id="authStep2" class="hidden" style="margin-top:16px">
-      <div class="field">
-        <label for="authCode">6-digit code from the email</label>
-        <input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
-      </div>
-      <button class="btn primary" id="authVerify" style="margin-top:10px">Verify and sign in</button>
-    </div>
+    <button class="btn primary" id="authSend" style="margin-top:10px">Email me a sign-in link</button>
 
     <p id="authMsg" class="auth-msg"></p>
+
+    <div id="authStep2" class="hidden">
+      <details class="code-fallback">
+        <summary>My email has a 6-digit code instead</summary>
+        <p class="muted small">Most projects send only a link — click that and you're done. Enter a code here only if your email actually contains one.</p>
+        <div class="field" style="margin-top:8px">
+          <label for="authCode">6-digit code</label>
+          <input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" placeholder="123456">
+        </div>
+        <button class="btn primary tiny" id="authVerify" style="margin-top:8px">Verify and sign in</button>
+      </details>
+    </div>
+
     <p class="muted small" style="margin-top:14px">Your progress stays in this browser too. Signing in adds a cloud copy — it never replaces the local one without merging first.</p>
   </div>
 </div>

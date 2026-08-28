@@ -889,8 +889,16 @@
   }
 
   /* Pull remote, merge into local, push the result back. */
+  let syncing = null;
   function doSync() {
     if (!FTSync.configured || !FTSync.isSignedIn()) return Promise.resolve();
+    if (syncing) return syncing;          /* onAuthStateChange and getSession can both fire */
+    syncing = runSync().then(function (v) { syncing = null; return v; },
+                            function (e) { syncing = null; throw e; });
+    return syncing;
+  }
+
+  function runSync() {
     paintSync("saving");
     return FTSync.pull().then(function (remote) {
       if (remote && remote.data && remote.data.steps) {
@@ -921,15 +929,36 @@
     $("#authClose").onclick = closeAuth;
     $("#authOverlay").onclick = closeAuth;
 
+    /* Turn Supabase's terse errors into something actionable. */
+    function authError(e) {
+      const raw = (e && e.message) || "";
+      const m = raw.toLowerCase();
+      if (m.indexOf("not authorized") !== -1 || m.indexOf("not allowed") !== -1) {
+        return "That address isn't allowed to receive mail from this project yet. " +
+               "Supabase's built-in email only delivers to your project's team members — " +
+               "use your own Supabase account email, add this person under Organization → Team, " +
+               "or set up custom SMTP. See SUPABASE-SETUP.md, step 3.";
+      }
+      if (m.indexOf("rate") !== -1 || m.indexOf("limit") !== -1 || m.indexOf("too many") !== -1) {
+        return "Rate limited — the built-in email service allows only about 2 messages an hour. " +
+               "Wait a while, or set up custom SMTP (SUPABASE-SETUP.md, step 3).";
+      }
+      if (m.indexOf("redirect") !== -1 || m.indexOf("url") !== -1) {
+        return "The redirect URL isn't allowed. Add this site's exact URL under " +
+               "Authentication → URL Configuration (SUPABASE-SETUP.md, step 4).";
+      }
+      return raw || "Couldn't send the email. Your work is still saved in this browser.";
+    }
+
     $("#authSend").onclick = function () {
       const em = $("#authEmail").value.trim();
       if (!em || em.indexOf("@") === -1) { $("#authMsg").textContent = "That doesn't look like an email address."; return; }
       $("#authMsg").textContent = "Sending…";
       FTSync.sendCode(em).then(function () {
         $("#authStep2").classList.remove("hidden");
-        $("#authMsg").textContent = "Sent. Enter the 6-digit code from the email — or just click the link in it.";
-        $("#authCode").focus();
-      }).catch(function (e) { $("#authMsg").textContent = e.message || "Could not send the code."; });
+        $("#authMsg").innerHTML = "<strong>Check your email.</strong> Click the sign-in link and you'll " +
+          "land back here signed in — this tab can stay open or be closed, either is fine.";
+      }).catch(function (e) { $("#authMsg").textContent = authError(e); });
     };
     $("#authVerify").onclick = function () {
       const em = $("#authEmail").value.trim();
@@ -941,8 +970,9 @@
         toast("Signed in — syncing");
         doSync();
       }).catch(function (e) {
-        $("#authMsg").textContent = e.message ||
-          "That code didn't work. If your email only contained a link, click the link instead.";
+        $("#authMsg").textContent =
+          "That code didn't work. If your email only contained a link, click the link instead — " +
+          "most projects can't send codes. (" + ((e && e.message) || "invalid code") + ")";
       });
     };
     $("#authEmail").onkeydown = function (e) { if (e.key === "Enter") $("#authSend").click(); };
