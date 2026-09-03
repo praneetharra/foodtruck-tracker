@@ -588,16 +588,118 @@ const PATH_QUIZ = [
     ]}
 ];
 
-/* Call scripts. Each item is [question, refKey or null] */
-const ASK_HEALTH = [
-  ["We're building a towed trailer, not a self-propelled truck. Do you permit it as a mobile food unit? Utah Code §11-56-102 defines a food truck as a fully encased food service establishment “on a motor vehicle or on a trailer that a motor vehicle pulls” — we want to confirm the county applies it that way.", "code1156"],
-  ["If we park on private property and connect to the site's pressurized potable water AND the public sanitary sewer, will you approve that under R392-102-7 and keep us on a mobile permit?", "r392_102_7"],
-  ["What does “in a manner approved by the local health officer” require in practice — backflow prevention, an air gap, a specific sewer connection detail, a grease interceptor?", "r392_102_7"],
-  ["If we are sewer-connected, do we still need a commissary agreement and a restroom agreement? Would we ever qualify for the tier one commissary exemption in R392-102-3?", "r392_102_3"],
-  ["At what point would you reclassify a stationary trailer as a permanent food establishment — is it time in one place, the utility connections, or something else?", "slcohdPlanReview"],
-  ["Your construction guidelines list a 10-gallon minimum fresh water tank for a hand-sink-only unit, but R392-102-7 says 30 gallons for a food truck. Which applies to us?", "slcohdMobileGuide"],
-  ["Our menu includes deep frying and possibly a tandoor. Any specific requirements or restrictions for those in a mobile unit?", null],
-  ["What are the current mobile plan review and annual food service permit fees, and which risk tier would our menu fall into?", "slcohdMobile"]
+/* ---------------------------------------------------------------------------
+   MEETING QUESTION SETS for Salt Lake County Health Department.
+   Each question is [text, refKey or null]. Grouped so a meeting can follow a
+   thread rather than jumping around.
+   --------------------------------------------------------------------------- */
+const ASK_SETS = [
+  {
+    id: "core",
+    title: "Ask first — these settle which path you're even on",
+    lede: "Until these are answered, Paths B and C are both hypothetical. Get through this block before anything else.",
+    groups: [
+      { h: "Does a trailer count?", qs: [
+        ["Utah Code §11-56-102 defines a food truck to include a unit on a trailer that a motor vehicle pulls. Do you permit a towed trailer as a mobile food unit on the same terms as a self-propelled truck?", "code1156"],
+        ["Your construction guidelines describe a mobile food unit as “vehicle-mounted.” Is there anything in that wording that treats a trailer differently in practice?", "slcohdMobileGuide"],
+        ["Salt Lake City bars trailers from the public right-of-way, so we'd be on private property. Does operating only on private property change anything on your side?", "slcGuidePdf"]
+      ]},
+      { h: "Where's the line between mobile and permanent?", qs: [
+        ["R392-102 never says when a mobile food business stops being mobile and becomes a permanent food establishment. How does Salt Lake County draw that line — time in one place, the utility connections, whether a tow vehicle is present, something else?", "r392_102"],
+        ["The rule defines a shaved ice establishment as operating “from a fixed, single location without moving offsite throughout the entire operating season” and still treats it as a mobile food business. If our trailer sits at one site all season, what makes our situation different from that?", "r392_102_2"],
+        ["Is that determination made at plan review, at the pre-opening inspection, or can it change later once you see how we operate?", "r392_102_5"]
+      ]},
+      { h: "Tier, fees and timeline", qs: [
+        ["Our menu will carry several TCS foods and raw animal products, which reads as tier two to me. Can you confirm the tier, since it drives the permit fee?", "r392_102"],
+        ["What are the current mobile plan review and annual food service permit fees for that tier?", "slcohdMobile"],
+        ["What's a realistic timeline from plan review submission to passing the pre-opening inspection right now?", "slcohdMobile"],
+        ["Your construction guidelines allow a 10-gallon fresh water tank for a hand-sink-only unit, but R392-102-7 sets 30 gallons for a food truck. Which figure applies to us?", "slcohdMobileGuide"]
+      ]},
+      { h: "The tandoor question", qs: [
+        ["We want a tandoor. Is a solid-fuel tandoor permitted in a mobile unit at all, and does charcoal versus gas change your answer?", null],
+        ["Where does your authority end and the fire marshal's begin on the tandoor, the hood and the suppression system — who should we be asking about what?", null],
+        ["Heavy deep frying is central to the menu. Does that change anything you'd require beyond the standard build?", null]
+      ]}
+    ]
+  },
+
+  {
+    id: "B",
+    title: "Path B — mobile permit, connected to water and sewer",
+    lede: "This is the path worth fighting for. It hinges entirely on one clause in R392-102-7 and on how this office chooses to read it.",
+    groups: [
+      { h: "The approval itself", qs: [
+        ["R392-102-7 lets a mobile food business use an adjacent pressurized potable water source instead of an onboard tank, but only while “concurrently connected to a public sanitary sewer system in a manner approved by the local health officer.” Do you approve that arrangement in Salt Lake County?", "r392_102_7"],
+        ["Have you approved it for anyone before? If so, roughly what did that setup look like?", "r392_102_7"],
+        ["What does “in a manner approved by the local health officer” require in practice — a specific backflow prevention device, an air gap, a particular sewer connection detail?", "r392_102_7"],
+        ["Can we get that approval in writing as part of plan review, rather than discovering the answer at the pre-opening inspection?", "r392_102_5"],
+        ["What would make you refuse it — something about the site, the connection type, or the menu?", "r392_102_7"]
+      ]},
+      { h: "What we'd still have to carry", qs: [
+        ["If we're connected to water and sewer, do we still need the onboard fresh and wastewater tanks fitted as a backup, or can we leave them out entirely?", "r392_102_7"],
+        ["If we disconnect to work a festival for a weekend, do we need working tanks for that? Does anything need re-inspecting before or after?", "r392_102_7"],
+        ["Does being connected change our permit type at all, or do we stay on a standard annual mobile food service permit?", "r392_102_4"],
+        ["Can the trailer be levelled on jacks, skirted, or have a serving deck built alongside — or does it need to stay visibly and immediately movable?", "slcohdMobileGuide"],
+        ["Is there a maximum time we can stay connected at one location before you'd want to revisit the classification?", "r392_102_4"]
+      ]},
+      { h: "Commissary and restrooms", qs: [
+        ["R392-102-3 requires a commissary. If we have water, sewer and warewashing at our own site, do we still need a commissary agreement — and what would we actually be using it for?", "r392_102_3"],
+        ["R392-102-3 exempts a tier one mobile food business from the commissary requirement if it meets all six conditions. Our menu is tier two, so I assume that door is closed to us — is that right?", "r392_102_3"],
+        ["Does the 500-foot restroom agreement still apply at a fixed site? Would restrooms on the property itself satisfy it, and would you want that in writing from the owner?", "slcohdMobileGuide"]
+      ]},
+      { h: "Grease and plumbing", qs: [
+        ["Would you require a grease interceptor as a condition of the sewer connection, or is that purely the sewer district's call?", "slcFogRef"],
+        ["Who inspects the connection — you, the city plumbing inspector, or both? And in what order, so we don't book them backwards?", "slcDevServicesRef"],
+        ["Given how much frying we'll do, is there anything additional you'd want on fats, oils and grease handling?", "slcFogRef"],
+        ["Do you need sign-off from the sewer authority before you'll approve our plans, or do those run in parallel?", "slcohdPlanReview"]
+      ]}
+    ]
+  },
+
+  {
+    id: "C",
+    title: "Path C — permanent food establishment",
+    lede: "Only worth pursuing if Path B is refused. Most of these questions exist to find out how much building you'd actually have to do.",
+    groups: [
+      { h: "Can a trailer even be one?", qs: [
+        ["If we went permanent, can the trailer itself be the permitted facility, or does the kitchen have to sit inside a permanent structure?", "slcohdPlanReview"],
+        ["If the trailer can't be the facility, what's the minimum build — is a permanent kitchen with the trailer as a service window something you permit?", "slcohdPlanReview"],
+        ["We'd go through permanent-facility plan review rather than the mobile one. What are those fees, and how do they compare to the mobile route?", "slcohdPlanReview"]
+      ]},
+      { h: "The build standard, applied to us", qs: [
+        ["Your guidelines require coving at floor-wall junctures with a ¼ inch radius and 4 inch height, and light-coloured, smooth, non-absorbent finishes throughout. Do the stock finishes on a commercial trailer typically pass that, or does it need relining?", "slcohdPlanReview"],
+        ["Hand sinks have to be within 15 feet of every prep area, warewashing area, toilet room and customer area, 25 feet absolute maximum. In a trailer-sized footprint, how many hand sinks does that work out to in practice?", "slcohdPlanReview"],
+        ["A three-compartment sink sized to our largest equipment, plus a mop or janitorial sink. Does the mop sink have to be in the same structure, or can it sit in an adjacent building?", "slcohdPlanReview"],
+        ["A Type I hood with a 6-inch overhang and no more than 4 feet from hood lip to cooking surface — would a standard trailer hood be accepted, or does it get re-engineered for a permanent permit?", "slcohdPlanReview"],
+        ["The 50-gallon, 50,000 BTU minimum water heater — does that apply to us, and where would you expect it to live?", "slcohdPlanReview"]
+      ]},
+      { h: "Restrooms — often the deal-breaker", qs: [
+        ["Permanent facilities need toilet rooms with hand sinks and mechanical ventilation giving a complete air change every 15 minutes. Would we have to build restrooms, or can an agreement covering the property's existing restrooms satisfy it?", "slcohdPlanReview"],
+        ["How many fixtures would we need for a walk-up operation with no indoor seating?", "slcohdPlanReview"],
+        ["If we added outdoor seating, does the fixture count change?", "slcohdPlanReview"]
+      ]},
+      { h: "Sewer, grease and timing", qs: [
+        ["Interceptor sizing comes from the local sewer district. Who exactly do we contact for our address, and do you need their sign-off before approving plans?", "slcohdPlanReview"],
+        ["Construction has to begin within 180 days of plan approval. What counts as “begin,” and what happens if we miss it?", "slcohdPlanReview"],
+        ["What's a realistic plan-submission-to-opening timeline for a small permanent facility right now?", "slcohdPlanReview"]
+      ]},
+      { h: "What we'd be giving up", qs: [
+        ["Once we're a permanent establishment we lose the statewide reciprocity in §11-56-103. If we later want to work festivals, is that a second separate permit and a second unit, or is there another route?", "code1156_103"],
+        ["Could we hold a permanent permit for the site and a separate mobile permit for a second trailer at the same time?", "slcohdPermits"],
+        ["Permits aren't transferable on a change of ownership. Is there anything we should structure differently now with that in mind?", "slcohdPermits"]
+      ]}
+    ]
+  }
+];
+
+/* What to have with you. */
+const ASK_BRING = [
+  "A site address, or your two or three shortlisted addresses — most answers depend on the specific site",
+  "Whether that site has a sanitary sewer lateral, and who the sewer authority is",
+  "Your draft menu, so they can tier it on the spot",
+  "The trailer's spec sheet or listing, if you've shortlisted one",
+  "Interior dimensions, or a rough floor plan showing where sinks would go",
+  "A notebook — get names and write answers down verbatim, then log them in Phase 0"
 ];
 
 const ASK_CITY = [

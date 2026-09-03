@@ -673,7 +673,24 @@
         (d ? '<a class="citelink" href="' + esc(d.url) + '" target="_blank" rel="noopener" title="' +
              esc(d.title) + '">' + esc(shortCite(q[1])) + "</a>" : "") + "</li>";
     }
-    $("#askHealth").innerHTML = ASK_HEALTH.map(askItem).join("");
+
+    $("#askBring").innerHTML = ASK_BRING.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("");
+
+    $("#askSets").innerHTML = ASK_SETS.map(function (set) {
+      let qn = 0;   /* number restarts per set — you'll only work one path's list */
+      const count = set.groups.reduce(function (a, g) { return a + g.qs.length; }, 0);
+      return '<div class="panel askset as-' + set.id + '">' +
+        '<div class="as-head"><span class="as-tag">' +
+          (set.id === "core" ? "First" : "Path " + set.id) + "</span>" +
+          "<h2>" + esc(set.title) + "</h2>" +
+          '<span class="pill">' + count + " questions</span></div>" +
+        '<p class="as-lede">' + esc(set.lede) + "</p>" +
+        set.groups.map(function (g) {
+          return '<div class="as-group"><h3>' + esc(g.h) + "</h3><ol class='ask-list' start='" +
+            (qn + 1) + "'>" + g.qs.map(function (q) { qn++; return askItem(q); }).join("") + "</ol></div>";
+        }).join("") + "</div>";
+    }).join("");
+
     $("#askCity").innerHTML = ASK_CITY.map(askItem).join("");
 
     $("#quiz").innerHTML = PATH_QUIZ.map(function (item, qi) {

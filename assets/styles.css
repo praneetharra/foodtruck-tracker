@@ -261,8 +261,29 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .quiz-out{margin-top:14px;padding:14px 16px;background:var(--accent-soft);border-radius:10px}
 .qo-lead{margin:0 0 4px;font-size:15px}
 .quiz-out > p{font-size:13.5px}
-.ask-list{padding-left:20px;margin:10px 0 0;font-size:13.5px}
-.ask-list li{margin-bottom:10px}
+.ask-list{padding-left:22px;margin:8px 0 0;font-size:13.5px}
+.ask-list li{margin-bottom:11px;padding-left:2px}
+.ask-list li::marker{color:var(--ink-3);font-size:12px}
+
+.bring{margin-top:14px;background:var(--surface-2);border-radius:10px;padding:12px 15px}
+.bring h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);font-weight:650;margin-bottom:6px}
+.bring ul{margin:0;padding-left:18px;font-size:13px}
+.bring li{margin-bottom:4px}
+
+.askset{border-left:3px solid var(--line)}
+.askset.as-core{border-left-color:var(--accent)}
+.askset.as-B{border-left-color:var(--ok)}
+.askset.as-C{border-left-color:var(--doing)}
+.as-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.as-head h2{font-size:16px;margin:0}
+.as-tag{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+.as-core .as-tag{background:var(--accent);color:var(--accent-ink)}
+.as-B .as-tag{background:var(--ok-soft);color:var(--ok)}
+.as-C .as-tag{background:var(--doing-soft);color:var(--doing)}
+.as-lede{margin:0 0 4px;font-size:13.5px;color:var(--ink-2)}
+.as-group{margin-top:16px}
+.as-group h3{font-size:12.5px;font-weight:650;color:var(--ink);margin-bottom:2px}
 
 .prose h2{margin-top:18px}
 .prose h2:first-child{margin-top:0}
