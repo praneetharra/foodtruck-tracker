@@ -206,6 +206,21 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .code-fallback[open] summary::before{content:"▾ "}
 .code-fallback summary:hover{color:var(--ink)}
 
+/* ---------- stale-cache warnings ---------- */
+.stalebar{
+  background:var(--blocked-soft);color:var(--blocked);font-size:13.5px;
+  padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  border-bottom:1px solid var(--line);
+}
+.stalebar .btn{margin-left:auto}
+kbd{
+  font:inherit;font-size:.9em;background:var(--surface);border:1px solid var(--line);
+  border-bottom-width:2px;border-radius:5px;padding:1px 5px;
+}
+.panel.stale{border-left:3px solid var(--blocked)}
+.panel.stale ol{padding-left:20px;font-size:13.5px}
+.panel.stale li{margin-bottom:6px}
+
 /* ---------- cities ---------- */
 .cnote{padding:9px 0;border-bottom:1px solid var(--line)}
 .cnote:last-child{border-bottom:none}

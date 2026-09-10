@@ -67,6 +67,21 @@ Branch: `main`, folder: `/ (root)` → Save**.
 The site goes live at `https://<your-username>.github.io/<repo-name>/` within a
 minute or two.
 
+## Deploying an update
+
+GitHub Pages caches assets, so a changed `.js` or `.css` file can keep serving the
+old version to a browser that has already visited. Every asset URL in `index.html`
+carries a `?v=` stamp to defeat that. **Run `./bump.sh` before committing** whenever
+you've touched anything in `assets/`:
+
+```bash
+./bump.sh
+git add -A && git commit -m "…" && git push origin main
+```
+
+If a change still doesn't show up, hard-refresh: **Cmd-Shift-R** (Mac) or
+**Ctrl-Shift-R** (Windows).
+
 ## Editing the content
 
 | File | What's in it |

@@ -593,3 +593,6 @@ const CITY_NOTES = [
   ["Three jurisdictions have no ordinance at all",
    "Draper, Cottonwood Heights and Alta simply never legislated mobile food. That is not permission — it means a phone call, and a case-by-case answer from a planner rather than a rule you can point at."]
 ];
+
+/* Sentinel: lets app.js tell "cities.js didn't load" apart from "loaded but empty". */
+window.CITIES_OK = true;

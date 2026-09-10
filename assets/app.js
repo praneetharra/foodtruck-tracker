@@ -6,6 +6,9 @@
   "use strict";
 
   const KEY = "ft-tracker-v1";
+  /* Bumped by bump.sh alongside the ?v= stamps in index.html. If the HTML and
+     this file disagree, the browser is mixing old and new copies. */
+  const APP_BUILD = "202609100505";
   const STATUSES = {
     todo:    { label: "Not started", cls: "todo" },
     doing:   { label: "In progress", cls: "doing" },
@@ -125,9 +128,23 @@
   function stamp() {
     const el = document.getElementById("savedAt");
     if (!el) return;
-    el.textContent = state.updated
+    el.textContent = (state.updated
       ? "Last saved " + new Date(state.updated).toLocaleString()
-      : "Nothing saved yet — your changes will save automatically.";
+      : "Nothing saved yet — your changes will save automatically.") + " · build " + APP_BUILD;
+  }
+
+  /* Warn once if index.html and app.js came from different deploys. */
+  function checkBuild() {
+    const htmlBuild = window.FT_HTML_BUILD;
+    if (!htmlBuild || htmlBuild === APP_BUILD) return;
+    const bar = document.createElement("div");
+    bar.className = "stalebar";
+    bar.innerHTML = "This page is mixing files from two different versions " +
+      "(page " + esc(htmlBuild) + ", script " + esc(APP_BUILD) + "). " +
+      "Hard refresh — <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> — to load a matching set." +
+      '<button class="btn tiny" id="stalex">Dismiss</button>';
+    document.body.insertBefore(bar, document.body.firstChild);
+    document.getElementById("stalex").onclick = function () { bar.remove(); };
   }
 
   /* Per-step record, created lazily */
@@ -812,6 +829,19 @@
   }
 
   function renderCities() {
+    /* If the browser served a stale bundle, say so instead of showing a blank tab. */
+    if (typeof CITIES === "undefined" || !window.CITIES_OK) {
+      $("#cityCards").innerHTML =
+        '<div class="panel stale"><h2>This page loaded an out-of-date copy of itself</h2>' +
+        "<p>The city data didn't load, which almost always means your browser is holding cached " +
+        "files from an earlier version of the site.</p><p><strong>Fixes, in order:</strong></p>" +
+        "<ol><li>Hard refresh — <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> on a Mac, " +
+        "<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> on Windows.</li>" +
+        "<li>Open the site in a private/incognito window. If it works there, it's definitely cache.</li>" +
+        "<li>Still stuck? DevTools → Network → tick <em>Disable cache</em>, then reload.</li></ol>" +
+        '<p class="muted small">Build loaded: ' + esc(APP_BUILD) + "</p></div>";
+      return;
+    }
     const counts = { yesRow: 0, yes: 0, none: 0, call: 0 };
     CITIES.forEach(function (c) {
       if (c.trailer === "yes-row") counts.yesRow++;
@@ -1192,6 +1222,7 @@
     $("#fileImport").onchange = function () { if (this.files[0]) doImport(this.files[0]); this.value = ""; };
 
     renderAll();
+    checkBuild();
     initSync();
   }
 
