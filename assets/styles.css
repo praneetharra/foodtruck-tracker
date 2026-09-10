@@ -206,6 +206,53 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .code-fallback[open] summary::before{content:"▾ "}
 .code-fallback summary:hover{color:var(--ink)}
 
+/* ---------- cities ---------- */
+.cnote{padding:9px 0;border-bottom:1px solid var(--line)}
+.cnote:last-child{border-bottom:none}
+.cnote h3{font-size:13.5px;margin-bottom:2px}
+.cnote p{margin:0;font-size:13px;color:var(--ink-2)}
+
+.tstat{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;
+  padding:2px 9px;border-radius:999px;white-space:nowrap}
+.t-ok{background:var(--ok-soft);color:var(--ok)}
+.t-warn{background:var(--doing-soft);color:var(--doing)}
+.t-bad{background:var(--blocked-soft);color:var(--blocked)}
+.t-grey{background:var(--surface-2);color:var(--ink-2)}
+.ctype{display:block;font-size:11px;color:var(--ink-3);font-weight:400;margin-top:1px}
+#cityTable th[scope=row]{white-space:nowrap;text-transform:none;letter-spacing:0;font-size:13.5px}
+#cityTable td{vertical-align:top;font-size:13px}
+.capwarn{color:var(--blocked);font-weight:550}
+
+.citycard{border-left:3px solid var(--line);scroll-margin-top:130px;transition:box-shadow .3s}
+.citycard.cf-ok{border-left-color:var(--ok)}
+.citycard.cf-warn{border-left-color:var(--doing)}
+.citycard.cf-bad{border-left-color:var(--blocked)}
+.citycard.cf-grey{border-left-color:var(--ink-3)}
+.citycard.flashon{box-shadow:0 0 0 3px var(--accent-soft),var(--shadow)}
+.cc-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.cc-head h2{font-size:17px;margin:0}
+.cc-head .ctype{display:inline;margin:0}
+.conf{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;
+  border-radius:999px;background:var(--surface-2);color:var(--ink-3);margin-left:auto}
+.conf-high{color:var(--ok)}
+.conf-med{color:var(--doing)}
+.cflag{margin:0 0 14px;background:var(--accent-soft);border-radius:10px;padding:10px 13px;
+  font-size:13.5px;font-weight:500}
+.cc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+.cc-sec h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);
+  font-weight:650;margin-bottom:4px}
+.cc-sec p{margin:0;font-size:13px}
+.clim{margin:0;padding-left:18px;font-size:13px}
+.clim li{margin-bottom:5px}
+.clim li.hot{color:var(--blocked);font-weight:550}
+.cverify{background:var(--surface-2);border-radius:10px;padding:11px 14px;margin-bottom:14px}
+.cverify h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);
+  font-weight:650;margin-bottom:5px}
+.cverify ul{margin:0;padding-left:18px;font-size:13px}
+.cverify li{margin-bottom:4px}
+.cc-links h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);
+  font-weight:650;margin-bottom:4px}
+
 /* ---------- citations ---------- */
 .reflist{list-style:none;padding:0;margin:0}
 .reflist li{padding:8px 0;border-bottom:1px dashed var(--line)}
@@ -344,6 +391,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 
 @media(max-width:820px){
   .two-col{grid-template-columns:1fr}
+  .cc-grid{grid-template-columns:1fr}
+  .conf{margin-left:0}
   .field-row{grid-template-columns:1fr}
   .brand h1{font-size:17px}
   .overall-txt span{display:none}

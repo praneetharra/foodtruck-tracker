@@ -42,6 +42,7 @@
   <nav class="tabs wrap" id="tabs">
     <button class="tab active" data-view="board">Phases</button>
     <button class="tab" data-view="paths">Path Decision</button>
+    <button class="tab" data-view="cities">Cities</button>
     <button class="tab" data-view="dashboard">Dashboard</button>
     <button class="tab" data-view="contacts">Contacts</button>
     <button class="tab" data-view="budget">Budget</button>
@@ -132,6 +133,39 @@
     <div class="panel">
       <p class="muted small">Rules were read in August 2026 from Utah Code, Utah Administrative Code R392-102, SLCoHD guidance documents and Salt Lake City Public Utilities. Regulations change and local interpretation varies. Nothing here is legal advice — confirm with the agency before you commit money.</p>
     </div>
+  </section>
+
+  <!-- ============ CITIES ============ -->
+  <section class="view hidden" id="view-cities">
+    <div class="panel hero">
+      <h2>Where a food trailer can actually operate in Salt Lake County</h2>
+      <p>Twenty jurisdictions, read from their municipal codes in September 2026. The question driving this: <strong>does each one allow a towed trailer, and where may a mobile unit park?</strong></p>
+      <div class="grid-stats" id="cityStats"></div>
+      <p class="muted small">Nothing here comes from food-truck blogs — every figure traces to a municipal code platform, an official city page, or an official city PDF. Where a finding couldn't be verified it says so, and each city lists what to confirm by phone.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Five things that shape the whole strategy</h2>
+      <div id="cityNotes"></div>
+    </div>
+
+    <div class="toolbar">
+      <input type="search" id="citySearch" placeholder="Search cities, zones, rules…" autocomplete="off">
+      <div class="filters" id="cityFilters">
+        <button class="chip active" data-cf="all">All 20</button>
+        <button class="chip" data-cf="yes-row">Trailer + street</button>
+        <button class="chip" data-cf="yes">Trailer allowed</button>
+        <button class="chip" data-cf="problem">Needs a call</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>At a glance</h2>
+      <div class="table-scroll"><table class="tbl" id="cityTable"></table></div>
+      <p class="muted small" style="margin-top:10px">Click any city name to jump to its full detail below.</p>
+    </div>
+
+    <div id="cityCards"></div>
   </section>
 
   <!-- ============ DASHBOARD ============ -->
@@ -259,6 +293,7 @@
 
 <script src="assets/config.js"></script>
 <script src="assets/data.js"></script>
+<script src="assets/cities.js"></script>
 <script src="assets/sync.js"></script>
 <script src="assets/app.js"></script>
 </body>

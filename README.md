@@ -7,6 +7,10 @@ Salt Lake County, Utah. Static site, no backend, hosted on GitHub Pages.
 
 - **12 ordered phases** from the licensing-path decision through growth, pre-loaded
   with researched Salt Lake County / Salt Lake City / Utah state requirements.
+- **Cities tab** — all 24 Salt Lake County jurisdictions, read from their municipal
+  codes: does each allow a towed food trailer, where may a mobile unit operate,
+  annual day caps, fees, reciprocity, and what to confirm by phone. Filterable and
+  searchable, with 66 links to primary sources.
 - **Path Decision tab** — a side-by-side comparison of the three ways a food trailer
   can be licensed in Salt Lake County, built around how wastewater is handled:
   self-contained tanks, a sewer-connected mobile unit, or a permanent food
@@ -70,6 +74,7 @@ minute or two.
 | `assets/data.js` | All phases, steps, checklists, agency contacts, the `REFS` citation registry, path comparison, cost estimates |
 | `assets/app.js` | Application logic, state, local persistence, cross-device merge |
 | `assets/sync.js` | Supabase transport — auth and read/write of the plan blob |
+| `assets/cities.js` | City-by-city mobile food rules for all 24 SLCo jurisdictions |
 | `assets/config.js` | Your Supabase URL and anon key (empty = local-only mode) |
 | `assets/styles.css` | Styling and light/dark theme |
 | `index.html` | Page structure |

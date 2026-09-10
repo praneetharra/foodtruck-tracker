@@ -798,6 +798,107 @@
     fr.readAsText(file);
   }
 
+  /* ---------------- cities ---------------- */
+  let cityFilter = "all";
+
+  function cityMatches(c) {
+    if (cityFilter === "yes-row" && c.trailer !== "yes-row") return false;
+    if (cityFilter === "yes" && c.trailer !== "yes" && c.trailer !== "yes-row") return false;
+    if (cityFilter === "problem" && ["unclear", "none", "row-ban", "special"].indexOf(c.trailer) === -1) return false;
+    const q = ($("#citySearch").value || "").trim().toLowerCase();
+    if (!q) return true;
+    return [c.name, c.type, c.zones, c.trailerNote, c.rowNote, c.fees, c.lic, c.flag,
+            (c.limits || []).join(" ")].join(" ").toLowerCase().indexOf(q) !== -1;
+  }
+
+  function renderCities() {
+    const counts = { yesRow: 0, yes: 0, none: 0, call: 0 };
+    CITIES.forEach(function (c) {
+      if (c.trailer === "yes-row") counts.yesRow++;
+      if (c.trailer === "yes" || c.trailer === "yes-row") counts.yes++;
+      if (c.trailer === "none") counts.none++;
+      if (["unclear", "none", "special", "row-ban"].indexOf(c.trailer) !== -1) counts.call++;
+    });
+    const totalJur = CITIES.reduce(function (a, c) { return a + (c.covers || 1); }, 0);
+    $("#cityStats").innerHTML = [
+      ["Jurisdictions", totalJur, CITIES.length + " entries — five townships share one code"],
+      ["Trailer clearly allowed", counts.yes, "named in the ordinance"],
+      ["Street vending open", counts.yesRow, "right-of-way, not just private lots"],
+      ["No ordinance at all", counts.none, "Draper, Cottonwood Heights, Alta"],
+      ["Need a phone call", counts.call, "before you commit to a site"]
+    ].map(function (t) {
+      return '<div class="stat"><div class="k">' + esc(t[0]) + '</div><div class="v">' + t[1] +
+        '</div><div class="d">' + esc(t[2]) + "</div></div>";
+    }).join("");
+
+    $("#cityNotes").innerHTML = CITY_NOTES.map(function (n) {
+      return '<div class="cnote"><h3>' + esc(n[0]) + "</h3><p>" + esc(n[1]) + "</p></div>";
+    }).join("");
+
+    const shown = CITIES.filter(cityMatches);
+
+    $("#cityTable").innerHTML =
+      "<thead><tr><th>Jurisdiction</th><th>Trailer</th><th>Right-of-way</th><th>Annual cap</th><th>Licence fee</th></tr></thead><tbody>" +
+      (shown.length ? shown.map(function (c) {
+        const t = TRAILER_LABEL[c.trailer];
+        return '<tr><th scope="row"><a href="#" data-city="' + c.id + '">' + esc(c.name) + "</a>" +
+          '<span class="ctype">' + esc(c.type) + "</span></th>" +
+          '<td><span class="tstat t-' + t[1] + '">' + esc(t[0]) + "</span></td>" +
+          "<td>" + esc(ROW_LABEL[c.row]) + "</td>" +
+          "<td>" + (c.cap ? '<span class="capwarn">' + esc(c.cap) + "</span>" : "—") + "</td>" +
+          "<td>" + esc(shortFee(c.fees)) + "</td></tr>";
+      }).join("") : '<tr><td colspan="5" class="empty">Nothing matches that filter.</td></tr>') + "</tbody>";
+
+    $("#cityCards").innerHTML = shown.map(cityCard).join("");
+  }
+
+  /* Pull the leading dollar figure out of the fee prose for the table. */
+  function shortFee(s) {
+    if (!s) return "—";
+    if (/^\$0\b/.test(s)) return "$0";
+    if (/^No mobile/i.test(s) || /^Not published/i.test(s)) return "see detail";
+    const m = /\$\d{1,3}(?:,\d{3})*(?:\.\d\d)?/.exec(s);
+    return m ? m[0] : "see detail";
+  }
+
+  function cityCard(c) {
+    const t = TRAILER_LABEL[c.trailer];
+    return '<article class="panel citycard cf-' + t[1] + '" id="city-' + c.id + '">' +
+      '<div class="cc-head"><h2>' + esc(c.name) + "</h2>" +
+        '<span class="ctype">' + esc(c.type) + (c.pop && c.pop !== "—" ? " · " + esc(c.pop) : "") + "</span>" +
+        '<span class="tstat t-' + t[1] + '">' + esc(t[0]) + "</span>" +
+        '<span class="conf conf-' + c.conf + '">' +
+          ({ high: "Well verified", med: "Partly verified", low: "Thin" }[c.conf]) + "</span></div>" +
+      (c.flag ? '<p class="cflag">' + esc(c.flag) + "</p>" : "") +
+      '<div class="cc-grid">' +
+        cSec("Does a trailer count?", esc(c.trailerNote)) +
+        cSec("Right-of-way", esc(c.rowNote)) +
+        cSec("Where you may operate", esc(c.zones)) +
+        cSec("Licensing & reciprocity", esc(c.lic)) +
+      "</div>" +
+      '<div class="cc-grid">' +
+        '<div class="cc-sec"><h3>Rules that bite</h3><ul class="clim">' +
+          (c.limits || []).map(function (l) {
+            const hot = /ANNUAL CAP|PROHIBITED|SIZE CAP|200 FT|1,000 ft|SEPARATE TRAILER/.test(l);
+            return '<li' + (hot ? ' class="hot"' : "") + ">" + esc(l) + "</li>";
+          }).join("") + "</ul></div>" +
+        '<div class="cc-sec"><h3>Fees</h3><p>' + esc(c.fees) + "</p>" +
+          "<h3 style='margin-top:12px'>Contact</h3><p>" +
+          (c.contact.phone ? '☎ <a href="tel:' + tel(c.contact.phone) + '">' + esc(c.contact.phone) + "</a>" : "") +
+          (c.contact.email ? '<br>✉ <a href="mailto:' + esc(c.contact.email) + '">' + esc(c.contact.email) + "</a>" : "") +
+          "</p></div>" +
+      "</div>" +
+      ((c.verify || []).length ?
+        '<div class="cverify"><h3>Confirm by phone before you commit</h3><ul>' +
+        c.verify.map(function (v) { return "<li>" + esc(v) + "</li>"; }).join("") + "</ul></div>" : "") +
+      '<div class="cc-links"><h3>Sources</h3><ul class="linklist">' +
+        (c.links || []).map(function (l) {
+          return '<li><a href="' + esc(l[1]) + '" target="_blank" rel="noopener">' + esc(l[0]) + "</a></li>";
+        }).join("") + "</ul></div>" +
+      "</article>";
+  }
+  function cSec(h, body) { return '<div class="cc-sec"><h3>' + h + "</h3><p>" + body + "</p></div>"; }
+
   /* ---------------- sources ---------------- */
   function renderSources() {
     /* how many steps cite each document */
@@ -831,13 +932,14 @@
   /* ---------------- views ---------------- */
   function setView(v) {
     ui.view = v;
-    ["board", "paths", "dashboard", "contacts", "budget", "help"].forEach(function (n) {
+    ["board", "paths", "cities", "dashboard", "contacts", "budget", "help"].forEach(function (n) {
       $("#view-" + n).classList.toggle("hidden", n !== v);
     });
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
       t.classList.toggle("active", t.dataset.view === v);
     });
     if (v === "paths") renderPaths();
+    if (v === "cities") renderCities();
     if (v === "dashboard") renderDashboard();
     if (v === "contacts") renderContacts();
     if (v === "budget") renderBudget();
@@ -1025,6 +1127,14 @@
     });
 
     $("#search").addEventListener("input", function () { ui.q = this.value.trim(); renderBoard(); });
+    $("#citySearch").addEventListener("input", renderCities);
+    $("#cityFilters").addEventListener("click", function (e) {
+      const c = e.target.closest(".chip"); if (!c) return;
+      cityFilter = c.dataset.cf;
+      Array.prototype.forEach.call(this.querySelectorAll(".chip"), function (x) { x.classList.remove("active"); });
+      c.classList.add("active");
+      renderCities();
+    });
     $("#contactSearch").addEventListener("input", renderContacts);
     $("#onlyMine").addEventListener("change", function () { ui.onlyStar = this.checked; renderBoard(); });
     $("#statusFilters").addEventListener("click", function (e) {
@@ -1040,6 +1150,14 @@
       if (star) {
         e.stopPropagation();
         const r = rec(star.dataset.star); r.star = !r.star; touch(star.dataset.star); save(); renderBoard();
+        return;
+      }
+      const city = e.target.closest("[data-city]");
+      if (city) {
+        e.preventDefault();
+        const el = document.getElementById("city-" + city.dataset.city);
+        if (el) { el.scrollIntoView({ behavior: "smooth" }); el.classList.add("flashon");
+                  setTimeout(function () { el.classList.remove("flashon"); }, 1400); }
         return;
       }
       const go = e.target.closest("[data-goto]");
